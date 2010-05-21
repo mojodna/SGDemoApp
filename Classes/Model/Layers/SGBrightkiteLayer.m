@@ -37,6 +37,15 @@
 
 @implementation SGBrightkiteLayer
 
+- (id) init
+{
+    if(self = [super initWithLayerName:@"com.simplegeo.global.brightkite"]) {
+        
+    }
+    
+    return self;
+}
+
 - (id<SGRecordAnnotation>) recordAnnotationFromGeoJSONObject:(NSDictionary*)dictionary
 {
     SGSocialRecord* record = [[[SGBrightkite alloc] init] autorelease];
@@ -44,6 +53,5 @@
     
     return record;
 }
-
 
 @end

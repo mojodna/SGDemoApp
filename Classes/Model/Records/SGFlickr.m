@@ -51,6 +51,10 @@
     return [UIImage imageNamed:@"Flickr.png"];
 }
 
+- (MKPinAnnotationColor) pinColor
+{
+    return MKPinAnnotationColorPurple;
+}
 
 @end
 

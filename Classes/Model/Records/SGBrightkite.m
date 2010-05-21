@@ -57,4 +57,9 @@
     return [self.properties objectForKey:@"location"];
 }
 
+- (MKPinAnnotationColor) pinColor
+{
+    return MKPinAnnotationColorRed;
+}
+
 @end

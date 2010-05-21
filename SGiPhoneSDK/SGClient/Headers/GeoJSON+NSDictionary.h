@@ -103,6 +103,13 @@
 - (NSArray*) features;
 
 /*!
+ * @method geometries
+ * @abstract Returns the GeoJSONObject associated with the key geometries.
+ * @result ￼The geometries GeoJSONObject.
+ */
+- (NSArray*) geometries;
+
+/*!
 * @method layerLink
 * @abstract Use this URL string to obtain information about the layer
 * this GeoJSON object resides in.
@@ -135,11 +142,31 @@
 - (BOOL) isFeatureCollection;
 
 /*!
+* @method Determines whether this GeoJSON object is a geometry collection.
+* @result YES if the object is a collection of geometries; otherwise NO.
+*/
+- (BOOL) isGeometryCollection;
+
+/*!
 * @method isPoint
 * @abstract Determines whether this GeoJSON object is a point. ￼
 * @result ￼YES if the object is a point; otherwise NO.
 */
 - (BOOL) isPoint;
+
+/*!
+* @method isPolygon
+* @abstract Determines whether this GeoJSON object is a polygon. ￼
+* @result ￼YES if the object is a polygon; otherwise NO.
+*/
+- (BOOL) isPolygon;
+
+/*!
+* @method isMultiPolygon
+* @abstract Determines whether this GeoJSON object is a multipolygon. ￼
+* @result ￼YES if the object is a multipolygon; otherwise NO.
+*/
+- (BOOL) isMultiPolygon;
 
 @end
 
@@ -203,6 +230,15 @@
 * @param features ￼The value to store.
 */
 - (void) setFeatures:(NSArray*)features;
+
+/*!
+ * @method setGeometries:
+ * @abstract Sets the GeoJSONObject stored at key geometries.
+ * @discussion This is a value specific to SimpleGeo. The GeoJSON spec (http://geojson.org/geojson-spec.html)
+ * allows key/values to be defined at the top-level of the object.
+ * @param geometries ￼The value to store.
+ */
+- (void) setGeometries:(NSArray*)geometries;
 
 /*!
 * @method setExpires:

@@ -83,6 +83,8 @@ static UIImage* kDefaultProfileImage = nil;
  */
 - (void) fetchImages;
 
+- (MKPinAnnotationColor) pinColor;
+
 @end
 
 

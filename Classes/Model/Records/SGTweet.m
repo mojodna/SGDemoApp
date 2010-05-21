@@ -46,5 +46,10 @@
     return [UIImage imageNamed:@"Twitter.png"];
 }
 
+- (MKPinAnnotationColor) pinColor
+{
+    return MKPinAnnotationColorGreen;
+}
+
 @end
 

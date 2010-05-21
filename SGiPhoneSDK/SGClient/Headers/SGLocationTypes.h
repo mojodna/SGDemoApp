@@ -32,7 +32,7 @@
 //  Created by Derek Smith.
 //
 
-#import <Foundation/Foundation.h>
+#import <CoreLocation/CoreLocation.h>
 
 /*!
 * @defined kSGLocationType_Person
@@ -94,6 +94,8 @@ typedef struct {
 
 } SGGeohash;
 
+extern NSString* SGGeohashToString(SGGeohash geohash);
+
 /*!
 * @function SGGeohashMake(double, double, SGLocationZoomLevel)
 * @abstract Creates a new SGGeohash structure.
@@ -103,6 +105,41 @@ typedef struct {
 * @result A new SGGeohash structure.
 */
 extern SGGeohash SGGeohashMake(double latitude, double longitude, int precision);
+
+/*!
+* @struct SGEnvelope
+* @field south The South side of the polygon.
+* @field west The west side of the polygon.
+* @field north The north side of the polygon.
+* @field east The east side of the polygon
+*/
+typedef struct {
+    
+    CLLocationDegrees south;
+    CLLocationDegrees west;
+    CLLocationDegrees north;
+    CLLocationDegrees east;
+    
+} SGEnvelope;
+
+/*!
+* @function SGEnvelopeMake(CLLocationDegrees, CLLocationDegrees, CLLocationDegrees, CLLocationDegrees)
+* @abstract Creates a new SGEnvelope structure.
+* @param south The South side of the polygon.
+* @param west The West side of the polygon.
+* @param north The North side of the polygon.
+* @param east The East side of the polygon.
+* @result A new SGEnvelope structure.
+*/
+extern SGEnvelope SGEnvelopeMake(CLLocationDegrees south, CLLocationDegrees west, CLLocationDegrees north, CLLocationDegrees east);
+
+/*!
+* @function SGEnvelopeGetString(SGEnvelope)
+* @abstract Creates a NSString from a SGPolyon.
+* @param envelope The envelope to stringify.
+* @result A NSString representation of a SGEnvelope.
+*/
+extern NSString* SGEnvelopeGetString(SGEnvelope envelope);
 
 /*!
 * @defined kSpotRank_Monday 

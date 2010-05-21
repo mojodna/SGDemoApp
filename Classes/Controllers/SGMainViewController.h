@@ -36,10 +36,10 @@
 #import <CoreLocation/CoreLocation.h>
 
 #import "SGLayerMapView.h"
-#import "SGModelController.h"
+#import "SGUIImageLoader.h"
 #import "SGWebViewController.h"
 
-@interface SGMainViewController : UIViewController <MKMapViewDelegate, CLLocationManagerDelegate, SGLocationServiceDelegate> { 
+@interface SGMainViewController : UIViewController <MKMapViewDelegate, SGLocationServiceDelegate, CLLocationManagerDelegate> { 
     
     @private    
     UITableView* socialRecordTableView;
@@ -51,20 +51,16 @@
     SGARNavigationViewController* arNavigationViewController;
     SGLayerMapView* layerMapView;
                     
-    SGModelController* modelController;
+    SGUIImageLoader* imageLoader;
     CLLocationManager* locationManager;
     SGLocationService* locationService;
     
-    SGCoverFlowView* albumScrollView;
-    
-    NSMutableArray* layers;
-    NSMutableArray* currentLocationResponseIds;
-    NSMutableArray* nearbySocialRecords;
+    NSMutableArray* censusLayers;
+    NSMutableArray* socialLayers;
     NSDictionary* addressInformation;
     
     UIBarButtonItem* leftButton, *rightButton, *locateButton;
     UILabel* bucketLabel;
-    UILabel* loadingLabel;
 }
 
 

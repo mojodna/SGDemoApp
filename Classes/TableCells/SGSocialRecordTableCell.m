@@ -75,9 +75,12 @@
 {
     [super layoutSubviews];
     
-    self.textLabel.text = userProfile.name;
-    self.detailTextLabel.text = userProfile.body;
-    self.imageView.image = userProfile.profileImage;
+    if(userProfile) {
+        self.textLabel.text = userProfile.name;
+        self.detailTextLabel.text = userProfile.body;
+        self.imageView.image = userProfile.profileImage;
+    }
+
     serviceImageView.frame = CGRectMake(self.imageView.frame.size.width - 16.0,
                                         self.imageView.frame.size.height - 16.0,
                                         16.0, 16.0);

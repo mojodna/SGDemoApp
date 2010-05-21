@@ -11,6 +11,6 @@
     #import <Foundation/Foundation.h>
     #import <UIKit/UIKit.h>
 
-    #import "SimpleGeo.h"
+    #import "SGAREnvironment.h"
     #import "SGClient.h"
 #endif

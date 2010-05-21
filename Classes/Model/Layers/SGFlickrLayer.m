@@ -37,6 +37,16 @@
 
 @implementation SGFlickrLayer
 
+- (id) init
+{
+    if(self = [super initWithLayerName:@"com.simplegeo.global.flickr"]) {
+        
+    }
+    
+    return self;
+}
+
+
 - (id<SGRecordAnnotation>) recordAnnotationFromGeoJSONObject:(NSDictionary*)dictionary
 {
     SGSocialRecord* record = (SGSocialRecord*)[[[SGFlickr alloc] init] autorelease];

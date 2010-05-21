@@ -37,6 +37,15 @@
 
 @implementation SGTwitterLayer
 
+- (id) init
+{
+    if(self = [super initWithLayerName:@"com.simplegeo.global.twitter"]) {
+        
+    }
+    
+    return self;
+}
+
 - (id<SGRecordAnnotation>) recordAnnotationFromGeoJSONObject:(NSDictionary*)dictionary
 {
     SGSocialRecord* record = (SGSocialRecord*)[[[SGTweet alloc] init] autorelease];

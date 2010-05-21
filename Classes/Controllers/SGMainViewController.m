@@ -34,95 +34,46 @@
 
 #import "SGMainViewController.h"
 
+/* Layers */
 #import "SGFlickrLayer.h"
 #import "SGBrightkiteLayer.h"
 #import "SGTwitterLayer.h"
+#import "SGUSZipLayer.h"
+#import "SGWeatherLayer.h"
+#import "SGGeonamesLayer.h"
 
 /* Records */
+#import "SGCensusLayer.h"
 #import "SGFlickr.h"
 #import "SGTweet.h"
 #import "SGBrightkite.h"
-#import "SGUSZip.h"
-#import "SGUSWeather.h"
-#import "SGGeoNames.h"
 
+/* Views */
 #import "SGPinAnnotationView.h"                                                                                             
 #import "SGSocialRecordTableCell.h"
+#import "SGLoadingView.h"
 
+#import "SGLayerAdditions.h"
 
-enum CensusSection {
-    
-    kCensusSection_Address = 0,
-    kCensusSection_Weather,
-    kCensusSection_Zip,
-    kCensusSection_GeoNames,
-    
-    kCensusSection_Amount
-};
-
-enum WeatherRow {
- 
-    kWeatherRow_Weather = 0,
-    kWeatherRow_StationDistance,
-    
-    kWeatherRow_Amount  
-};
-
-enum ZipRow {
- 
-    kZipRow_City = 0,
-    kZipRow_ZipCode,
-    kZipRow_Population,
-    kZipRow_HouseValue,
-    kZipRow_HouseIncome,
-    
-    kZipRow_Amount
-};
-
-enum GeoNames {
- 
-    kGeoNames_Name = 0,
-    kGeoNames_Population,
-    
-    kGeoNames_Amount
-};
-
-enum Address {
- 
-    kAddress_Country = 0,
-    kAddress_CountyCode,
-    kAddress_CountyName,
-    kAddress_PlaceName,
-    kAddress_PostalCode,
-    kAddress_StateCode,
-    kAddress_Street,
-    kAddress_StreetNumber,
-    
-    kAddress_Amount
-};
-
-
-@interface SGMainViewController (Private) <UITableViewDelegate, UITableViewDataSource, SGARNavigationViewControllerDataSource, SGCoverFlowViewDelegate>
+@interface SGMainViewController (Private) <UITableViewDelegate, UITableViewDataSource, SGARNavigationViewControllerDataSource>
 
 - (void) initializeLocationService;
 - (void) initializeLayers;
 - (void) initializeARView;
 
-- (void) presentError:(NSError *)error;
+- (void) presentError:(NSError*)error;
 - (void) lockScreen:(BOOL)lock;
 
 - (id<SGRecordAnnotation>) getClosestAnnotation:(NSArray*)annotations;
-- (NSString*) getStringValue:(NSString*)key properties:(NSDictionary*)properties;
 
 - (void) setupAnnotationView:(SGAnnotationView *)annotationView;
 - (void) centerMap:(CLLocationCoordinate2D)coordinate animated:(BOOL)animated;
-- (SGModelType) modelTypeForResponseId:(NSString *)requestId;
+
+- (void) updateBuckets:(NSInteger)bucketIndex;
 
 @end
 
-
-@implementation SGMainViewController 
-
+@implementation SGMainViewController
 
 - (id) init
 {
@@ -131,22 +82,19 @@ enum Address {
         self.title = @"Demo";
         self.hidesBottomBarWhenPushed = NO;
         
-        modelController = [SGModelController modelController];
+        imageLoader = [SGUIImageLoader imageLoader];
         locationManager = [[CLLocationManager alloc] init];
         locationManager.delegate = self;
         [locationManager startUpdatingLocation];        
-        
+                    
+        layerMapView = [[SGLayerMapView alloc] initWithFrame:CGRectZero];
+        layerMapView.limit = 50;
+        layerMapView.delegate = self;
+
         [self initializeLocationService];
         [self initializeARView];
-            
-        layerMapView = [[SGLayerMapView alloc] initWithFrame:CGRectZero];
-        layerMapView.limit = 40;
-        layerMapView.delegate = self;
-        [layerMapView stopRetrieving];
         
-        addressInformation = nil;
-        
-        [self initializeLayers];
+        [self initializeLayers];        
     
         webViewController = [[SGWebViewController alloc] init];
     }
@@ -156,8 +104,6 @@ enum Address {
 
 - (void) initializeLocationService
 {
-    locationService = [SGLocationService sharedLocationService];
-    [locationService addDelegate:self];
     [SGLocationService callbackOnMainThread:YES];
         
     SGSetEnvironmentViewingRadius(1000.0f);         // 1km
@@ -170,68 +116,21 @@ enum Address {
     NSDictionary* token = [NSDictionary dictionaryWithContentsOfFile:path];
     
     SGOAuth* oAuth = [[SGOAuth alloc] initWithKey:[token objectForKey:@"key"] secret:[token objectForKey:@"secret"]];
-    locationService.HTTPAuthorizer = oAuth;
+    [SGLocationService sharedLocationService].HTTPAuthorizer = oAuth;
 }
 
 - (void) initializeLayers
-{
-    layers = [[NSMutableArray alloc] init];
-    
-    nearbySocialRecords = [[NSMutableArray alloc] init];
-    currentLocationResponseIds = [[NSMutableArray alloc] init];
-    
-    for(int i = 0; i < kSGModelType_Amount; i++) {
-        
-        [nearbySocialRecords addObject:[NSMutableArray array]];
-
-        SGLayer* layer = nil;
-        switch (i) {
-                
-            case kSGModelType_Brightkite:
-            {
-                layer = [[SGBrightkiteLayer alloc] initWithLayerName:@"com.simplegeo.global.brightkite"];
-                [layerMapView addLayer:layer];                
-            }
-                break;
-            case kSGModelType_Twitter:
-            {
-                layer = [[SGTwitterLayer alloc] initWithLayerName:@"com.simplegeo.global.twitter"];
-                [layerMapView addLayer:layer];
-            }
-                break;
-            case kSGModelType_Flickr:
-            {
-                layer = [[SGFlickrLayer alloc] initWithLayerName:@"com.simplegeo.global.flickr"];
-                [layerMapView addLayer:layer];
-            }
-                break;
-            case kSGModelType_GeoNames:
-            {
-                layer = [[SGLayer alloc] initWithLayerName:@"com.simplegeo.global.geonames"];            
-            }
-                break;
-            case kSGModelType_USZip:
-            {
-                layer = [[SGLayer alloc] initWithLayerName:@"com.simplegeo.us.zip"];
-            }
-                break;
-            case kSGModelType_USWeather:
-            {
-                layer = [[SGLayer alloc] initWithLayerName:@"com.simplegeo.us.weather"];
-            }
-                break;
-            case kSGModelType_Address:
-            {
-                layer = [NSNull null];
-            }
-                break;
-            default:
-                break;
-        }
-        
-        [layers addObject:layer];
-        [currentLocationResponseIds addObject:[NSNull null]];
-    }    
+{    
+    socialLayers = [[NSMutableArray alloc] init];
+    [socialLayers addObject:[[SGBrightkiteLayer alloc] init]];
+    [socialLayers addObject:[[SGTwitterLayer alloc] init]];
+    [socialLayers addObject:[[SGFlickrLayer alloc] init]];
+    [layerMapView addLayers:socialLayers];
+ 
+    censusLayers = [[NSMutableArray alloc] init];
+    [censusLayers addObject:[[SGGeonamesLayer alloc] init]]; 
+    [censusLayers addObject:[[SGWeatherLayer alloc] init]];
+    [censusLayers addObject:[[SGUSZipLayer alloc] init]];
 }
 
 - (void) initializeARView
@@ -260,7 +159,6 @@ enum Address {
 - (void) loadView
 {
     [super loadView];
-            
     socialRecordTableView = [[UITableView alloc] initWithFrame:CGRectMake(0.0,
                                                                     0.0,
                                                                     self.view.bounds.size.width,
@@ -279,12 +177,6 @@ enum Address {
     [self.view addSubview:layerMapView];
  
     arNavigationViewController.title = @"Ground Level";
-    
-    albumScrollView = [[SGCoverFlowView alloc] initWithFrame:CGRectMake(0.0, 80.0, 320.0, 350.0) 
-                                               maximumAlbums:10];
-    [albumScrollView.closeButton addTarget:self action:@selector(closeAlbumView:) forControlEvents:UIControlEventTouchDown];
-    albumScrollView.delegate = self;
-    
 }
 
 - (void) viewDidLoad
@@ -324,15 +216,6 @@ enum Address {
     
     [self.navigationController setToolbarHidden:NO animated:NO];
     
-    loadingLabel = [[UILabel alloc] initWithFrame:CGRectMake(0.0, 64.0, self.view.frame.size.width, self.view.frame.size.height - 88.0)];
-    loadingLabel.text = @"Loading Records...";
-    loadingLabel.textAlignment = UITextAlignmentCenter;
-    loadingLabel.font = [UIFont boldSystemFontOfSize:18.0];
-    loadingLabel.textColor = [UIColor grayColor];
-    loadingLabel.backgroundColor = [UIColor colorWithWhite:0.0 alpha:0.7];
-    [[[UIApplication sharedApplication] keyWindow] addSubview:loadingLabel];
-    
-    
     leftButton = [[UIBarButtonItem alloc] initWithImage:[UIImage imageNamed:@"LeftButton.png"]
                                                   style:UIBarButtonItemStylePlain 
                                                  target:self
@@ -357,10 +240,8 @@ enum Address {
                                    animated:NO];
     
     [arNavigationViewController setToolbarHidden:NO animated:NO];    
-    
-    [self lockScreen:YES];
 }
-
+     
 ////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma mark -
 #pragma mark UIButton methods 
@@ -371,26 +252,20 @@ enum Address {
     [layerMapView stopRetrieving];
     
     if(segmentedControl.selectedSegmentIndex == 0) {
-     
         locateButton.enabled = NO;
         [arNavigationViewController reloadAllBuckets];
         [self.navigationController presentModalViewController:arNavigationViewController animated:YES];
         segmentedControl.selectedSegmentIndex = 1;
-        
     } else if(segmentedControl.selectedSegmentIndex == 1) {
-            
         [layerMapView startRetrieving];
         locateButton.enabled = YES;
         self.title = @"Demo";
         [self.view bringSubviewToFront:layerMapView];
-        
     } else {
-        
         locateButton.enabled = NO;
         self.title = @"Nearby Records";
         [socialRecordTableView reloadData];
         [self.view bringSubviewToFront:socialRecordTableView];
-        
     }
 }
 
@@ -402,106 +277,48 @@ enum Address {
 - (void) showCensusInfo:(id)button
 {
     UIButton* infoButton = (UIButton*)button;
-    
     [censusTableView reloadData];
     
     [UIView beginAnimations:@"ShowCensus" context:nil];
-    [UIView setAnimationDuration:1.2];
-     
+    [UIView setAnimationDuration:1.2];     
      if(infoButton.tag) {
-      
          censusTableView.hidden = YES;
          [UIView setAnimationCurve:UIViewAnimationCurveEaseOut];
-         
      } else {
-         
          [self.view bringSubviewToFront:censusTableView];
          censusTableView.hidden = NO;
          [UIView setAnimationCurve:UIViewAnimationCurveEaseIn];
-         
      }
-        
-    
     [UIView commitAnimations];
     infoButton.tag = !infoButton.tag;
 }
 
-- (void) closeAlbumView:(id)button
-{
-    [albumScrollView removeAllAlbums];
-    [albumScrollView removeFromSuperview];
-}
-
 - (void) nextBucket:(id)button
 {
-    if([arNavigationViewController loadNextBucket]) {
-     
-        NSInteger bucketIndex = arNavigationViewController.bucketIndex;
-        
-        rightButton.enabled = bucketIndex != 3;
-        leftButton.enabled = bucketIndex != 0;
-        
-        if(!rightButton.enabled) {
-                bucketLabel.text = @"All";
-        } else
-            bucketLabel.text = [modelController stringForModelType:bucketIndex];
-    }
-    
+    if([arNavigationViewController loadNextBucket])
+        [self updateBuckets:arNavigationViewController.bucketIndex];
 }
 
 - (void) previousBucket:(id)button
 {
-    
-    if([arNavigationViewController loadPreviousBucket]) {
-
-        NSInteger bucketIndex = arNavigationViewController.bucketIndex;
-        if(bucketIndex == 3)
-            bucketLabel.text = @"All";
-        else
-            bucketLabel.text = [modelController stringForModelType:bucketIndex];
-        
-        rightButton.enabled = bucketIndex != 3;
-        leftButton.enabled = bucketIndex != 0;
-    }
-    
+    if([arNavigationViewController loadPreviousBucket])
+        [self updateBuckets:arNavigationViewController.bucketIndex];
 }
+
+- (void) updateBuckets:(NSInteger)bucketIndex
+{
+    if(bucketIndex == 3)
+        bucketLabel.text = @"All";
+    else
+        bucketLabel.text = [[socialLayers objectAtIndex:bucketIndex] title];
+    
+    rightButton.enabled = bucketIndex != 3;
+    leftButton.enabled = bucketIndex != 0;
+}    
 
 - (void) containerSelected:(id)container
 {
-    [albumScrollView addAlbums:[((SGAnnotationViewContainer*)container) getRecordAnnotations]];
-    [arNavigationViewController.arView addSubview:albumScrollView];
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////
-#pragma mark -
-#pragma mark SGCoverFlowView delegate methods 
-//////////////////////////////////////////////////////////////////////////////////////////////// 
-
-- (void) coverFlowView:(SGCoverFlowView*)view didSelectAlbum:(id<SGAlbum>)album
-{
-    // There is only one container.
-    SGAnnotationViewContainer* container = [[arNavigationViewController.arView getContainers] objectAtIndex:0];
-    
-    NSArray* annotaitonViews = [container getRecordAnnotationViews];
-    
-    SGAnnotationView* selectedAnnotationView = nil;
-    for(SGAnnotationView* annotaitonView in annotaitonViews) {
-        
-        if([annotaitonView.annotation isEqual:album]) {
-
-            selectedAnnotationView = annotaitonView;
-            break;
-        }
-    }
-    
-    if(selectedAnnotationView) {
-        
-        [self closeAlbumView:nil];
-        
-        selectedAnnotationView.frame = CGRectMake(0.0, 200.0, selectedAnnotationView.frame.size.width, selectedAnnotationView.frame.size.height);
-        [selectedAnnotationView inspectView:YES];
-        [[[UIApplication sharedApplication] keyWindow] addSubview:selectedAnnotationView];
-    }
+    // TODO
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -512,7 +329,6 @@ enum Address {
 - (void) centerMap:(CLLocationCoordinate2D)coordinate animated:(BOOL)animated
 {
     MKCoordinateSpan span = {0.01, 0.011};
-    
     MKCoordinateRegion region = MKCoordinateRegionMake(coordinate, span);
     [layerMapView setRegion:region animated:animated];
 }
@@ -523,38 +339,29 @@ enum Address {
     
     if(!annotationView && ![annotation isKindOfClass:[MKUserLocation class]])
         annotationView = [[[SGPinAnnotationView alloc] initWithAnnotation:annotation reuseIdentifier:@"PinView"] autorelease];
-    
     [annotationView setAnnotation:annotation];
     
     SGSocialRecord* record = (SGSocialRecord*)annotation;
-    
-    if([record isKindOfClass:[MKUserLocation class]]) {
-    
+    if([record isKindOfClass:[MKUserLocation class]])
         annotationView = nil;
-        
-    } else {
-        
-        annotationView.canShowCallout = YES;
-        
-        [modelController addObjectToImageLoader:record];
-        
-        if([record isKindOfClass:[SGTweet class]])
-            annotationView.pinColor = MKPinAnnotationColorGreen;
-        else if([record isKindOfClass:[SGFlickr class]])
-            annotationView.pinColor = MKPinAnnotationColorPurple;    
-        else if([record isKindOfClass:[SGBrightkite class]])
-            annotationView.pinColor = MKPinAnnotationColorRed;
-        
-        
+    else {    
+        annotationView.canShowCallout = YES;        
+        [imageLoader addObjectToImageLoader:record];
+        annotationView.pinColor = [record pinColor];
     }
     
     return annotationView;
 }
 
+- (void)mapView:(MKMapView*)mapView didAddAnnotationViews:(NSArray*)views
+{
+    if([SGLoadingView isLoading])
+        [self lockScreen:NO];
+}
+
 - (void) mapView:(MKMapView*)mapView annotationView:(MKAnnotationView *)view calloutAccessoryControlTapped:(UIControl*)control
 {
     if(control == view.rightCalloutAccessoryView) {
- 
         SGSocialRecord* record = (SGSocialRecord*)view.annotation;
 
         SGAnnotationView* annotationView = [[[SGAnnotationView alloc] initAtPoint:CGPointZero reuseIdentifier:@"Blah:)"] autorelease];
@@ -586,197 +393,27 @@ enum Address {
     
     NSInteger section = indexPath.section;
     NSInteger row = indexPath.row;
-    
     if(tableView == socialRecordTableView) {
-        
-        SGSocialRecordTableCell* socialCell = (SGSocialRecordTableCell*)[tableView dequeueReusableCellWithIdentifier:@"NormalCell"];
-    
+        SGLayer* socialLayer = [socialLayers objectAtIndex:section];
+        NSString* title = [socialLayer title];
+        SGSocialRecordTableCell* socialCell = (SGSocialRecordTableCell*)[tableView dequeueReusableCellWithIdentifier:title];
         if(!socialCell)
-            socialCell = [[[SGSocialRecordTableCell alloc] initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:@"NormalCell"] autorelease];
+            socialCell = [[[SGSocialRecordTableCell alloc] initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:title] autorelease];
         
-        SGSocialRecord* record = [[nearbySocialRecords objectAtIndex:section] objectAtIndex:row];
+        SGSocialRecord* record = [[socialLayer recordAnnotations] objectAtIndex:row];
         socialCell.userProfile = record;
-            
         cell = socialCell;
-        
     } else {
+        SGCensusLayer* layer = [censusLayers objectAtIndex:section];
+        NSString* title = [layer title];
+        cell = [tableView dequeueReusableCellWithIdentifier:title];
+        if(!cell)
+            cell = [[[UITableViewCell alloc] initWithStyle:UITableViewCellStyleValue1 reuseIdentifier:title] autorelease];
         
-        
-        NSArray* recordAnnotations = [nearbySocialRecords objectAtIndex:section+3];
-        if(section == kCensusSection_Address) {
-            
-            cell = [tableView dequeueReusableCellWithIdentifier:@"AddressCell"];
-            if(!cell)
-                cell = [[[UITableViewCell alloc] initWithStyle:UITableViewCellStyleValue1 reuseIdentifier:@"AddressCell"] autorelease];
-            
-            
-            NSString* text = @"N/A";
-            NSString* key = nil;
-            
-            if(row == kAddress_Country) {
-                
-                text = @"Country";
-                key = @"country";
-                
-            } else if(row == kAddress_CountyCode) {
-                
-                text = @"County Code";
-                key = @"county_code";
-                
-            } else if(row == kAddress_CountyName) {
-                
-                text = @"County Name";
-                key = @"country_name";
-                
-            } else if(row == kAddress_PlaceName) {
-                
-                text = @"Place Name";
-                key = @"place_name";
-                
-            } else if(row == kAddress_PostalCode) {
-                
-                text = @"Postal Code";
-                key = @"postal_code";
-                
-            } else if(row == kAddress_StateCode) {
-                
-                text = @"State Code";
-                key = @"state_code";
-                
-            } else if(row == kAddress_Street) {
-                
-                text = @"Street";
-                key = @"street";
-                
-            } else if(row == kAddress_StreetNumber) {
-                
-                text = @"Street Number";
-                key = @"street_number";
-                
-            }
-            
-            cell.textLabel.text = text;
-            cell.detailTextLabel.text = @"N/A";
-            
-            if(key && addressInformation) {
-                
-                key = [addressInformation objectForKey:key];
-                
-                if(key)
-                    cell.detailTextLabel.text = key;
-            }
-            
-            
-        } else if(section == kCensusSection_Weather) {
-            
-            cell = [tableView dequeueReusableCellWithIdentifier:@"WeatherCell"];
-            if(!cell)
-                cell = [[[UITableViewCell alloc] initWithStyle:UITableViewCellStyleValue1 reuseIdentifier:@"WeatherCell"] autorelease];
-            
-            
-            SGRecord* record = (SGRecord*)[self getClosestAnnotation:recordAnnotations];
-            if(row == kWeatherRow_Weather) {
-                
-                cell.textLabel.text = @"Weather";
-                
-                if(record) {
-                    
-                    NSDictionary* userDefinedProp = [record properties];
-//                    NSString* iconURL = [userDefinedProp objectForKey:@"icon_url_base"];
-//                    iconURL = [iconURL stringByAppendingString:[userDefinedProp objectForKey:@"icon_url_name"]];
-//                
-//                    UIImage* image = [[UIImage imageWithData:[NSData dataWithContentsOfURL:[NSURL URLWithString:iconURL]]] retain];
-//                
-//                    cell.imageView.image = image;
-                  
-                    cell.detailTextLabel.text = [self getStringValue:@"weather" properties:userDefinedProp];
-                    
-                } else {
-                    
-                    cell.detailTextLabel.text = @"N/A";
-                    
-                }
-                
-                
-            } else if(row == kWeatherRow_StationDistance) {
-                
-                CLLocation* recordLocation = [[CLLocation alloc] initWithLatitude:record.coordinate.latitude
-                                                                        longitude:record.coordinate.longitude];
-                double distance = [locationManager.location getDistanceFrom:recordLocation];
-                [recordLocation release];
-                
-                cell.textLabel.text = @"Station Distance";
-                cell.detailTextLabel.text = [NSString stringWithFormat:@"%.2fm", distance];
-                
-            }
-            
-        } else if(section == kCensusSection_Zip) {
-            
-            cell = [tableView dequeueReusableCellWithIdentifier:@"ZipCell"];
-            if(!cell)
-                cell = [[[UITableViewCell alloc] initWithStyle:UITableViewCellStyleValue1 reuseIdentifier:@"ZipCell"] autorelease];
-            
-            
-            SGRecord* annotation = (SGRecord*)[self getClosestAnnotation:recordAnnotations];
-            switch (row) {
-                case kZipRow_ZipCode:
-                {
-                    cell.textLabel.text = @"Zip Code";
-                    cell.detailTextLabel.text = annotation.recordId;
-                }
-                    break;
-                case kZipRow_Population:
-                {
-                    cell.textLabel.text = @"Population";
-                    cell.detailTextLabel.text = [self getStringValue:@"population"
-                                                          properties:[annotation properties]];                    
-                }
-                    break;
-                case kZipRow_HouseIncome:
-                {
-                    cell.textLabel.text = @"Avg House Value";
-                    cell.detailTextLabel.text = [self getStringValue:@"averagehousevalue"
-                                                          properties:[annotation properties]];                    
-                }
-                    break;
-                case kZipRow_HouseValue:
-                {
-                    cell.textLabel.text = @"Avg Household Income";
-                    cell.detailTextLabel.text = [self getStringValue:@"incomeperhousehold"
-                                                          properties:[annotation properties]];                                        
-                }
-                    break;
-                case kZipRow_City:
-                {
-                    cell.textLabel.text = @"City";
-                    cell.detailTextLabel.text = [self getStringValue:@"city"
-                                                          properties:[annotation properties]];                                        
-                }
-                    break;                    
-                default:
-                    break;
-            }
-            
-        } else if(section == kCensusSection_GeoNames) {
-            
-            cell = [tableView dequeueReusableCellWithIdentifier:@"GeoNamesCell"];
-            if(!cell)
-                cell = [[[UITableViewCell alloc] initWithStyle:UITableViewCellStyleValue1 reuseIdentifier:@"GeoNamesCell"] autorelease];
-            
-            
-            if(row == kGeoNames_Name) {
-                
-                cell.textLabel.text = @"Name";
-                cell.detailTextLabel.text = @"";
-                
-            } else if(row == kGeoNames_Population) {
-                
-                cell.textLabel.text = @"Population";
-                cell.detailTextLabel.text = @"";
-                
-            }
-        }
-        
+        NSDictionary* information = [layer information];
+        NSArray* keys = [information allKeys];
+        cell.textLabel.text = [keys objectAtIndex:row];
+        cell.detailTextLabel.text = [information objectForKey:[keys objectAtIndex:row]];
     }
     
     return cell;
@@ -784,26 +421,16 @@ enum Address {
 
 - (NSInteger) numberOfSectionsInTableView:(UITableView*)tableView
 {
-    return tableView == socialRecordTableView ? 3 : kCensusSection_Amount;
+    return tableView == socialRecordTableView ? [socialLayers count] : [censusLayers count];
 }
 
 - (NSInteger) tableView:(UITableView*)tableView numberOfRowsInSection:(NSInteger)section
 {
     int amount = 0;
     if(tableView == socialRecordTableView)
-        amount = [[nearbySocialRecords objectAtIndex:section] count];
-    else {
-        
-        if(section == kCensusSection_Weather)
-            amount = kWeatherRow_Amount;
-        else if(section == kCensusSection_Zip)
-            amount = 0;
-        else if(section == kCensusSection_GeoNames)
-            amount = 0;
-        else if(section == kCensusSection_Address)
-            amount = kAddress_Amount;
-            
-    }
+        amount = [[socialLayers objectAtIndex:section] recordAnnotationCount];
+    else 
+        amount = [[[censusLayers objectAtIndex:section] information] count];
         
     return amount;
 }
@@ -811,18 +438,22 @@ enum Address {
 - (NSString*) tableView:(UITableView*)tableView titleForHeaderInSection:(NSInteger)section
 {
     NSString* title = nil;
-    
-    if(tableView != socialRecordTableView && (section == kCensusSection_GeoNames || section == kCensusSection_Zip))
-        title = @"";
-    
-    if(tableView != socialRecordTableView)
-        section += 3;
-    
-    if(!title)
-        title = [modelController stringForModelType:section];
-            
-
+    if(tableView == socialRecordTableView)
+        title = [[socialLayers objectAtIndex:section] title];
+    else
+        title = [[censusLayers objectAtIndex:section] title];
+        
     return title;
+}
+
+- (void) locationService:(SGLocationService*)service succeededForResponseId:(NSString*)requestId responseObject:(NSObject*)responseObject
+{
+    
+}
+
+- (void) locationService:(SGLocationService*)service failedForResponseId:(NSString*)requestId error:(NSError*)error
+{
+    [self presentError:error];
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -832,11 +463,10 @@ enum Address {
 
 - (void) tableView:(UITableView*)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
-    if(tableView == socialRecordTableView) {
-        
-        SGSocialRecord* record = [[nearbySocialRecords objectAtIndex:indexPath.section] objectAtIndex:indexPath.row];
-        
+    if(tableView == socialRecordTableView) {        
+        SGSocialRecord* record = [[[socialLayers objectAtIndex:indexPath.section] recordAnnotations] objectAtIndex:indexPath.row];
         [webViewController loadURLString:[record profileURL]];
+
         webViewController.title = record.name;
         [self.navigationController pushViewController:webViewController animated:YES];
         
@@ -851,122 +481,6 @@ enum Address {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma mark -
-#pragma mark SGLocationService delegate methods
-//////////////////////////////////////////////////////////////////////////////////////////////// 
-
-- (void) locationService:(SGLocationService*)service succeededForResponseId:(NSString*)requestId responseObject:(NSObject*)object
-{    
-    
-    // Search through all response ids that were created on the initial value
-    // of the device's location.
-    SGModelType modelType = -1;
-    NSString* layerResponse = nil;
-    for(int i = 0; i < kSGModelType_Amount; i++) {
-        
-        layerResponse = [currentLocationResponseIds objectAtIndex:i];
-        if(![layerResponse isKindOfClass:[NSNull class]] && [layerResponse isEqualToString:requestId]) {
-            modelType = i;
-            break;
-        }
-    }
-    
-    // Make sure we have a valid layer type.
-    if(modelType >= 0) {
-        
-        loadingLabel.text = [NSString stringWithFormat:@"Loaded %@. %i more left...",
-                             [modelController stringForModelType:modelType], kSGModelType_Amount - modelType - 1];
-     
-        if(modelType == kSGModelType_Address) {
-            
-            if(object) {
-                
-                NSDictionary* geoJSONObject = (NSDictionary*)object;
-                
-                NSDictionary* properties = [geoJSONObject properties];
-                if(properties)
-                    addressInformation = [[NSDictionary alloc] initWithDictionary:properties];
-            }            
-            
-        } else {
-        
-            SGLayer* layer = [layers objectAtIndex:modelType];
-        
-            NSMutableArray* annotationViewRecords = nil;
-            if(modelType < [nearbySocialRecords count])
-                annotationViewRecords = [nearbySocialRecords objectAtIndex:modelType];
-        
-            if(annotationViewRecords) {
-        
-                NSDictionary* geoJSONObject = (NSDictionary*)object;
-                NSArray* features = [geoJSONObject features];
-                
-                SGRecord* record = nil;
-                for(NSDictionary* feature in features) {
-                
-                    record = [layer recordAnnotationFromGeoJSONObject:feature];
-            
-                    if(record) {
-                    
-                        if([record isKindOfClass:[SGSocialRecord class]])
-                            [modelController addObjectToImageLoader:(SGSocialRecord*)record];
-                    
-                        [annotationViewRecords addObject:record];
-                    }
-                }        
-            
-            }
-        }
-        
-        [currentLocationResponseIds replaceObjectAtIndex:modelType withObject:[NSNull null]];        
-        
-    }
-        
-    if(modelType == kSGModelType_Amount - 1) {
-        
-        [self lockScreen:NO];
-        [layerMapView startRetrieving];
-        [service removeDelegate:self];
-        
-    }
-    
-}
-
-- (void) locationService:(SGLocationService*)service failedForResponseId:(NSString*)requestId error:(NSError*)error
-{
-    
-    // Search through all response ids that were created on the initial value
-    // of the device's location.
-    SGModelType modelType = -1;
-    NSString* layerResponse = nil;
-    for(int i = 0; i < kSGModelType_Amount; i++) {
-        
-        layerResponse = [currentLocationResponseIds objectAtIndex:i];
-        if(![layerResponse isKindOfClass:[NSNull class]] && [layerResponse isEqualToString:requestId]) {
-            modelType = i;
-            break;
-        }
-    }
-    
-    // Make sure we have a valid layer type.
-    if(modelType >= 0) {
-                
-        [currentLocationResponseIds replaceObjectAtIndex:modelType withObject:[NSNull null]];
-        
-        // Once we get to the last layer, we allow the map view to retrieve
-        // records when needed.
-        if(modelType == 5) {
-            
-            [self lockScreen:NO];
-            
-            [layerMapView startRetrieving];
-            [self presentError:error];
-        }
-    }
-    
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////
-#pragma mark -
 #pragma mark CLLocationManager delegate methods 
 //////////////////////////////////////////////////////////////////////////////////////////////// 
 
@@ -974,35 +488,23 @@ enum Address {
 {
     // This will only be executed once.
     if(!oldLocation) {
-        
+        [self lockScreen:YES];
         CLLocationCoordinate2D coordinate = newLocation.coordinate;
         [self centerMap:coordinate animated:YES];
         
-        // Gather all current information.
-        SGLayer* layer = nil;
+        // Gather all current location information.
+        SGLatLonNearbyQuery* nearbyQuery = [[SGLatLonNearbyQuery alloc] initWithLayer:nil];
+        nearbyQuery.coordinate = coordinate;
+        
+        // The radius is large because we want to make sure and grab a weather station
+        // within our query.
+        nearbyQuery.radius = 100.0;
+        nearbyQuery.limit = 1;
         NSString* requestId = nil;
-        int radius = 10.0;
-        for(int i = 0; i < kSGModelType_Amount; i++) {
-            
-            if(i != kSGModelType_Address) {
-            
-                // For some of the census data layers,
-                // we need to enlarge the radius to find the proper
-                // weather station and points of interest.
-                radius = (i > 2) ? 100.0 : 1.0;
+        for(SGLayer* layer in censusLayers)
+            requestId = [layer nearby:nearbyQuery];
         
-                layer = [layers objectAtIndex:i];
-                requestId = [layer retrieveRecordsForCoordinate:coordinate radius:radius types:nil limit:15];
-        
-                if(requestId) 
-                    [currentLocationResponseIds replaceObjectAtIndex:i
-                                                          withObject:requestId];
-                
-            } else {
-                
-                [currentLocationResponseIds replaceObjectAtIndex:i withObject:[locationService reverseGeocode:newLocation.coordinate]];       
-            }
-        }
+        [layerMapView startRetrieving];
     }
 }
 
@@ -1018,32 +520,25 @@ enum Address {
 
 - (NSArray*) viewController:(SGARNavigationViewController*)nvc
                                             annotationsForBucketAtIndex:(NSInteger)bucketIndex
-{   
-    NSMutableArray* annotations = [NSMutableArray array];
-    
-    if(bucketIndex == 3)
-        for(NSMutableArray* annotations in nearbySocialRecords)
-            [annotations addObjectsFromArray:annotations];
-    else
-        [annotations addObjectsFromArray:[nearbySocialRecords objectAtIndex:bucketIndex]];
-    
-    return annotations;
+{       
+    return [[socialLayers objectAtIndex:bucketIndex] recordAnnotations];
 }
 
 - (NSInteger) viewControllerNumberOfBuckets:(SGARNavigationViewController*)nvc
 {
-    return 4;
+    return [socialLayers count];
 }
 
 - (SGAnnotationView*) viewController:(SGARNavigationViewController*)nvc
                    viewForAnnotation:(id<SGRecordAnnotation>)annotation
                                     atBucketIndex:(NSInteger)bucketIndex
 {
-    
-    SGAnnotationView* annotationView = [nvc.arView dequeueReuseableAnnotationViewWithIdentifier:@"SocialRecord"];
-    
+    SGLayer* socialLayer = [socialLayers objectAtIndex:bucketIndex];
+    NSString* title = [socialLayer title];
+                       
+    SGAnnotationView* annotationView = [nvc.arView dequeueReuseableAnnotationViewWithIdentifier:title];
     if(!annotationView)
-        annotationView = [[[SGAnnotationView alloc] initAtPoint:CGPointZero reuseIdentifier:@"SocialRecord"] autorelease];
+        annotationView = [[[SGAnnotationView alloc] initAtPoint:CGPointZero reuseIdentifier:title] autorelease];
     
     ((SGSocialRecord*)annotation).helperView = annotationView;
     annotationView.annotation = annotation;
@@ -1060,10 +555,9 @@ enum Address {
 
 - (void) lockScreen:(BOOL)lock
 {
-    loadingLabel.hidden = !lock;
-    
     self.navigationController.toolbar.userInteractionEnabled = !lock;
     self.navigationController.navigationBar.userInteractionEnabled = !lock;
+    [SGLoadingView showLoading:lock lock:NO];
 }
 
 - (void) setupAnnotationView:(SGAnnotationView*)annotationView
@@ -1079,7 +573,6 @@ enum Address {
     annotationView.targetImageView.image = record.profileImage;
     
     [annotationView.radarTargetButton setImage:record.serviceImage forState:UIControlStateNormal];
-    
 }
 
 - (void) presentError:(NSError*)error
@@ -1104,15 +597,13 @@ enum Address {
     
     CLLocation* currentLocation = [locationManager location];
     if(recordAnnotations && [recordAnnotations count]) {
-     
         CLLocation* location = nil;
         CLLocationCoordinate2D coord;
         for(id<SGRecordAnnotation> recordAnnotation in recordAnnotations) {
             coord = recordAnnotation.coordinate;
             location = [[CLLocation alloc] initWithLatitude:coord.latitude
                                                   longitude:coord.longitude];
-            if(currentDistance < 0.0 || [currentLocation getDistanceFrom:location] < currentDistance)
-            {
+            if(currentDistance < 0.0 || [currentLocation getDistanceFrom:location] < currentDistance) {
                 currentDistance = [currentLocation getDistanceFrom:location];
                 annotation = recordAnnotation;
             }
@@ -1122,19 +613,6 @@ enum Address {
     }
 
     return annotation;
-}
-
-- (NSString*) getStringValue:(NSString*)key properties:(NSDictionary*)properties
-{
-    NSString* stringValue = @"N/A";
-    NSObject* value = [properties objectForKey:key];
-    if(value && ![value isKindOfClass:[NSNull class]])        
-        if([value isKindOfClass:[NSNumber class]])
-            stringValue = [(NSNumber*)value stringValue];
-        else if([value isKindOfClass:[NSString class]])
-            stringValue = (NSString*)value;
-    
-    return stringValue;
 }
 
 - (void) dealloc 
@@ -1147,18 +625,15 @@ enum Address {
     [arNavigationViewController release];
     [layerMapView release];
     
-    [modelController release];
     [locationService release];
     
-    [layers release];
-    [currentLocationResponseIds release];
-    [nearbySocialRecords release];
+    [socialLayers release];
+    [censusLayers release];
     
     [leftButton release];
     [rightButton release];
     
     [super dealloc];
 }
-
 
 @end

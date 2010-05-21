@@ -53,7 +53,6 @@
             kDefaultProfileImage = [[UIImage imageWithImage:[UIImage imageNamed:@"SGDefaultProfilePicture.png"]
                                                scaledToSize:CGSizeMake(38.0, 38.0)] retain];
 
-        
     }
     
     return self;
@@ -112,6 +111,11 @@
         pImage = kDefaultProfileImage;
     
     return pImage;
+}
+
+- (MKPinAnnotationColor) pinColor
+{
+    return MKPinAnnotationColorRed;
 }
 
 - (void) fetchImages
