@@ -720,7 +720,7 @@
 					"-l",
 					SGClient,
 					"-l",
-					SGMapClient,
+					SGMapKit,
 					"-l",
 					SGAREnvironment,
 				);
