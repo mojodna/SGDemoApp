@@ -35,6 +35,7 @@
 #import <Foundation/Foundation.h>
 
 #import "SGLayer.h"
+#import "SGRecord.h"
 #import "SGGeoJSONEncoder.h"
 
 /*!
@@ -66,19 +67,19 @@
  
     @private
     NSMutableDictionary* sgLayers;
-    NSMutableArray* presentAnnotations;
+    NSMutableDictionary* historyRecords;
     
-    NSMutableArray* layerResponseIds;
+    NSMutableArray* presentAnnotations;
     NSMutableArray* newRecordAnnotations;
     
     id<MKMapViewDelegate> trueDelegate;
  
     SGGeohash previousRegion;
- 
-    BOOL shouldRetrieveRecords;
     
     NSTimer* timer;
- 
+
+    NSMutableArray* layerResponseIds;
+    NSMutableArray* historyResponseIds;
 }
 
 /*!

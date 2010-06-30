@@ -32,9 +32,6 @@
 //  Created by Derek Smith.
 //
 
-#import <Foundation/Foundation.h>
-#import <MapKit/MapKit.h>
-
 #import "SGRecordAnnotation.h"
 
 /*!
@@ -48,7 +45,7 @@
 * It is recommended that this class be subclassed because most records stored in SimpleGeo will have user-defined properties. See 
 * @link //simplegeo/ooc/cl/SGGeoJSONEncoder SGGeoJSONEncoder @/link.
 */
-@interface SGRecord : NSObject <SGRecordAnnotation>
+@interface SGRecord : NSObject <SGRecordAnnotation, SGHistoricRecordAnnoation>
 {
     NSString* recordId;
  
@@ -65,6 +62,7 @@
     NSString* selfLink;
     
     NSMutableDictionary* properties;
+    NSDictionary* history;
 }
 
 /*!
@@ -134,12 +132,31 @@
 */
 @property (nonatomic, retain) NSMutableDictionary* properties;
 
+@property (nonatomic, retain) NSDictionary* history;
+
 /*!
 * @method updateRecordWithGeoJSONObject:
 * @abstract Updates the record using the GeoJSONOBject. 
 * See @link //simplegeo/ooc/instm/SGRecordAnnotation/updateRecordWithGeoJSONObject: updateRecordWithGeoJSONObject: @/link. 
 */
 - (void) updateRecordWithGeoJSONObject:(NSDictionary*)dictionary;
+
+/*!
+* @method updateHistory:
+* @abstract ￼
+* @discussion ￼
+* @param newHistory ￼
+*/
+- (void) updateHistory:(NSDictionary*)newHistory;
+
+/*!
+* @method updateCoordinate:
+* @abstract ￼
+* @discussion ￼
+* @param coord ￼
+* @result ￼
+*/
+- (NSString*) updateCoordinate:(CLLocationCoordinate2D)coord;
 
 @end
 

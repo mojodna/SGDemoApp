@@ -705,7 +705,7 @@
 					"$(SRCROOT)/SGiPhoneSDK/SGMapKit/Headers",
 				);
 				INFOPLIST_FILE = "Resources/SGDemoApp-Info.plist";
-				IPHONEOS_DEPLOYMENT_TARGET = 3.1;
+				IPHONEOS_DEPLOYMENT_TARGET = 4.0;
 				LIBRARY_SEARCH_PATHS = (
 					"\"$(SRCROOT)/SGiPhoneSDK/SGClient/$(PLATFORM_NAME)\"",
 					"\"$(SRCROOT)/SGiPhoneSDK/SGMapKit/$(PLATFORM_NAME)\"",
@@ -726,7 +726,7 @@
 				);
 				PRODUCT_NAME = SGDemoApp;
 				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "";
-				SDKROOT = iphoneos3.2;
+				SDKROOT = iphoneos4.0;
 			};
 			name = Debug;
 		};
@@ -745,6 +745,7 @@
 					"$(SRCROOT)/SGiPhoneSDK/SGMapKit/Headers",
 				);
 				INFOPLIST_FILE = "Resources/SGDemoApp-Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 4.0;
 				LIBRARY_SEARCH_PATHS = (
 					"\"$(SRCROOT)/SGiPhoneSDK/SGClient/$(PLATFORM_NAME)\"",
 					"\"$(SRCROOT)/SGiPhoneSDK/SGMapKit/$(PLATFORM_NAME)\"",
@@ -765,7 +766,7 @@
 				);
 				PRODUCT_NAME = SGDemoApp;
 				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "";
-				SDKROOT = iphoneos3.2;
+				SDKROOT = iphoneos4.0;
 			};
 			name = Release;
 		};
