@@ -1,18 +1,13 @@
-SGDemoApp
+SGDemoApp 0.9.5
 
 ================================================================================
 ABSTRACT:
 
 This is a sample application that shows off many of the different components
-within the SGiPhoneSDK. The SGLocationService is used to load records from multiple
-global layers into CoreData. The records are then displayed in three different 
-avenues: UITableView, SGLayerMapView and SGARNavigationViewController.
-
-GeoJSON objects that are retrieved from SimpleGeo require different interpretations
-depending on which layer they were acquired from. Instead of storing the GeoJSON
-objects as NSDictionaries, 6 subclasses of SGRecord are provided to help
-ease the differentation processes. None of these records are saved when the
-application exits; they are only stored for the duration of the app.
+within the SGClient, SGMapKit and SGAREnvironment repositories. The 
+SGLocationService is used to load records from multiple global 
+layers. The records are then displayed in three different avenues: UITableView,
+ SGLayerMapView and SGARNavigationViewController.
 
 Both the UITableView and SGARNavigationViewController will only display those
 records that are within 1km radius of the devices current location. The AR
@@ -20,11 +15,14 @@ enviornment is set to one of the standard styles. The map will load and display
 records based on the displayed region of the view.
 
 In order to run the demo, you must already possess an OAuth access and secret key
-from http://simplegeo.com. At line 98 in SGMainViewController, a plist is loaded
-that "supposedly" contains the proper credentials. Either add your own Token.plist
-file to the project or just create create the SGOAuth object with plain-old NSStrings.
+from http://simplegeo.com. The demo application defines a default OAuth token which
+will not work. You must update the file at Resources/Token.plist with your personal
+OAuth token or else the application will complain about the OAuth token and exit.
 
-Note: This demo application only loads records layers com.simplegeo.global.*
+To update the repositories that this demo application depends on, run ./update_sg_sdk
+within the project directory.
+
+Note: This demo application only loads records from layers com.simplegeo.global.*
 If you want to view your personal layers, you need to modify the code.
 
 ================================================================================
@@ -144,6 +142,12 @@ The application delegate.
 
 ================================================================================
 CHANGES FROM PREVIOUS VERSIONS:
+Version 0.9.5
+- Exit the application if the default values in Resources/Token.plist haven't
+changed
+- Added an update_sg_sdk shell script that will clone the SGClient, SGMapKit
+and SGAREnvironment repositories
+
 Version 0.9.4
 - The public AREnvironment has been swapped out with the old static library. The
 code has also been adapted to use the new SGClient and SGMapKit.

@@ -115,7 +115,16 @@
     NSString* path = [mainBundle pathForResource:@"Token" ofType:@"plist"];
     NSDictionary* token = [NSDictionary dictionaryWithContentsOfFile:path];
     
-    SGOAuth* oAuth = [[SGOAuth alloc] initWithKey:[token objectForKey:@"key"] secret:[token objectForKey:@"secret"]];
+    NSString* key = [token objectForKey:@"key"];
+    NSString* secret = [token objectForKey:@"secret"];
+
+    
+    if([key isEqualToString:@"my-secret"] || [secret isEqualToString:@"my-secret"]) {
+        NSLog(@"ERROR!!! - Please change the credentials in Resources/Token.plist");
+        exit(1);
+    }   
+    
+    SGOAuth* oAuth = [[SGOAuth alloc] initWithKey:key secret:secret];
     [SGLocationService sharedLocationService].HTTPAuthorizer = oAuth;
 }
 
