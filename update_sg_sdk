@@ -6,7 +6,7 @@ APP_DIR=`pwd`
 REPOS="SGClient SGMapKit SGAREnvironment"
 
 for repo in $REPOS; do
-  git clone git@github.com:simplegeo/$repo $THIRD_PARTY_DIR/$repo
+  git clone http://github.com/simplegeo/$repo $THIRD_PARTY_DIR/$repo
   cd $THIRD_PARTY_DIR/$repo
   git pull origin master
   ./build_dist
