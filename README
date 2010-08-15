@@ -20,7 +20,9 @@ will not work. You must update the file at Resources/Token.plist with your perso
 OAuth token or else the application will complain about the OAuth token and exit.
 
 To update the repositories that this demo application depends on, run ./update_sg_sdk
-within the project directory.
+within the project directory. The SimpleGeo static libraries that come packaged with
+the repository should not require an update but in the case that they are out of date,
+the update_sg_sdk script should be executed.
 
 Note: This demo application only loads records from layers com.simplegeo.global.*
 If you want to view your personal layers, you need to modify the code.
