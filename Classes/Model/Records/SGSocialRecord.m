@@ -36,8 +36,9 @@
 
 #import "UIImageAdditions.h"
 
-@implementation SGSocialRecord 
+static UIImage* kDefaultProfileImage = nil;
 
+@implementation SGSocialRecord 
 @synthesize helperView, photo, serviceImage;
 @dynamic name, profileImage;
 

@@ -48,19 +48,19 @@
     UISegmentedControl* segmentedControl;
     
     SGWebViewController* webViewController;
-    SGARNavigationViewController* arNavigationViewController;
+    
+    SGARView* arView;
     SGLayerMapView* layerMapView;
+    SGLayer* socialLayer;    
                     
     SGUIImageLoader* imageLoader;
     CLLocationManager* locationManager;
     SGLocationService* locationService;
     
-    NSMutableArray* censusLayers;
-    NSMutableArray* socialLayers;
-    NSDictionary* addressInformation;
-    
     UIBarButtonItem* leftButton, *rightButton, *locateButton;
     UILabel* bucketLabel;
+    
+    NSArray* nearbyRecords;
 }
 
 

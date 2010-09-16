@@ -1,4 +1,4 @@
-SGDemoApp 0.9.5
+SGDemoApp 0.9.6
 
 ================================================================================
 ABSTRACT:
@@ -30,7 +30,7 @@ If you want to view your personal layers, you need to modify the code.
 ================================================================================
 BUILD REQUIREMENTS:
 
-iPhone SDK 3.1
+iPhone SDK 4.0
 
 Frameworks
 - CoreLocation
@@ -38,12 +38,13 @@ Frameworks
 - MapKit
 - OpenGLES
 - CoreGraphics
+- AudioVideo
 - UIKit
 
 ================================================================================
 RUNTIME REQUIREMENTS:
 
-iPhone OS 3.1
+iPhone OS 4.0
 
 ================================================================================
 PACKAGING LIST:
@@ -53,31 +54,9 @@ Contains all of the data models.
 
     Layers
     Contains the single subclass of SGLayer used for all SGRecord.
-    
-        SGTwitterLayer
-        A subclass of SGLayer that builds SGTweets.
         
         SGFlickrLayer
         A subclass of SGLayer that builds SGFlickrs.
-        
-        SGBrightkiteLayers
-        A subclass of SGLayer that builds SGBrightkites.
-
-        SGCensusLayer
-        A subclass of SGLayer that helps interpret the
-        census data.
-
-        SGGeonamesLayer
-        A subclass of SGCensusLayer that interprets the Geonames
-        data that is recieved from SimpleGeo.
-
-        SGWeatherLayer
-        A subclass of SGCensusLayer that interprets the USWeather
-        data that is recieved from SimpleGeo.
-        
-        SGUSZipLayer
-        A subclass of SGCensusLayer that interprets the USZip
-        data that is recieved from SimpleGeo.
         
     Records
     Contains all subclasses of SGRecord.
@@ -90,14 +69,6 @@ Contains all of the data models.
         
         SGBrightkite
         A subclass of SGSocialRecord that interprets the Brightkite GeoJSON encoded
-        object recieved from SimpleGeo.
-        
-        SGFlickr
-        A subclass of SGSocialRecord that interprets the Flickr GeoJSON encoded
-        object recieved from SimpleGeo.
-        
-        SGTweet
-        A subclass of SGSocialRecord that interprets the Tweet GeoJSON encoded
         object recieved from SimpleGeo.
         
     
@@ -144,6 +115,11 @@ The application delegate.
 
 ================================================================================
 CHANGES FROM PREVIOUS VERSIONS:
+Version 0.9.6
+- Update to version iOS 4.1
+- Modified the SGMainViewController class so it is compatible with the iOS 4.0
+version of the SGAREnvironment
+
 Version 0.9.5
 - Exit the application if the default values in Resources/Token.plist haven't
 changed

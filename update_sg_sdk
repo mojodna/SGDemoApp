@@ -10,11 +10,11 @@ for repo in $REPOS; do
   cd $THIRD_PARTY_DIR/$repo
   git pull origin master
   ./build_dist
-  latest_build=`find . -name $repo-v* | tail -n 1`
+  latest_build=`find . -name "${repo}-v*" | tail -n 1`
   echo Setting the latest build to $latest_build
   cd $APP_DIR
   rm -rf $SDK_DIR/$repo
   cd $SDK_DIR
-  ln -s ../$THIRD_PARTY_DIR/$repo/$latest_build $repo
+  cp -r ../$THIRD_PARTY_DIR/$repo/$latest_build $repo
   cd $APP_DIR
 done

@@ -13,4 +13,5 @@
 
     #import "SGAREnvironment.h"
     #import "SGClient.h"
+    #import "SGMapKit.h"
 #endif

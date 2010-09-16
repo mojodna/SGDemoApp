@@ -36,8 +36,6 @@
 
 /* Layers */
 #import "SGFlickrLayer.h"
-#import "SGBrightkiteLayer.h"
-#import "SGTwitterLayer.h"
 #import "SGUSZipLayer.h"
 #import "SGWeatherLayer.h"
 #import "SGGeonamesLayer.h"
@@ -45,24 +43,21 @@
 /* Records */
 #import "SGCensusLayer.h"
 #import "SGFlickr.h"
-#import "SGTweet.h"
-#import "SGBrightkite.h"
 
 /* Views */
 #import "SGPinAnnotationView.h"                                                                                             
 #import "SGSocialRecordTableCell.h"
 #import "SGLoadingView.h"
+#import "SGMapAnnotationView.h"
 
 #import "SGLayerAdditions.h"
 
-@interface SGMainViewController (Private) <UITableViewDelegate, UITableViewDataSource, SGARNavigationViewControllerDataSource>
+@interface SGMainViewController (Private) <UITableViewDelegate, UITableViewDataSource, SGARViewDataSource>
 
 - (void) initializeLocationService;
-- (void) initializeLayers;
-- (void) initializeARView;
 
 - (void) presentError:(NSError*)error;
-- (void) lockScreen:(BOOL)lock;
+- (NSArray*) nearbyRecords;
 
 - (id<SGRecordAnnotation>) getClosestAnnotation:(NSArray*)annotations;
 
@@ -92,9 +87,6 @@
         layerMapView.delegate = self;
 
         [self initializeLocationService];
-        [self initializeARView];
-        
-        [self initializeLayers];        
     
         webViewController = [[SGWebViewController alloc] init];
     }
@@ -104,8 +96,6 @@
 
 - (void) initializeLocationService
 {
-    [SGLocationService callbackOnMainThread:YES];
-        
     SGSetEnvironmentViewingRadius(1000.0f);         // 1km
     
     // The Token.plist file is just a file that contains the OAuth access
@@ -128,38 +118,6 @@
     [SGLocationService sharedLocationService].HTTPAuthorizer = oAuth;
 }
 
-- (void) initializeLayers
-{    
-    socialLayers = [[NSMutableArray alloc] init];
-    [socialLayers addObject:[[SGBrightkiteLayer alloc] init]];
-    [socialLayers addObject:[[SGTwitterLayer alloc] init]];
-    [socialLayers addObject:[[SGFlickrLayer alloc] init]];
-    [layerMapView addLayers:socialLayers];
- 
-    censusLayers = [[NSMutableArray alloc] init];
-    [censusLayers addObject:[[SGGeonamesLayer alloc] init]]; 
-    [censusLayers addObject:[[SGWeatherLayer alloc] init]];
-    [censusLayers addObject:[[SGUSZipLayer alloc] init]];
-}
-
-- (void) initializeARView
-{
-    arNavigationViewController = [[SGARNavigationViewController alloc] init];
-    arNavigationViewController.dataSource = self;
-    
-    arNavigationViewController.arView.enableWalking = NO;
-    arNavigationViewController.arView.movableStack.maxStackAmount = 1;
-    
-    SGAnnotationViewContainer* container = [[[SGAnnotationViewContainer alloc] initWithFrame:CGRectZero] autorelease];
-    container.frame = CGRectMake(200.0,
-                                 300.0,
-                                 container.frame.size.width,
-                                 container.frame.size.height);
-    
-    [container addTarget:self action:@selector(containerSelected:) forControlEvents:UIControlEventTouchDown];
-    [arNavigationViewController.arView addContainer:container];
-}
-
 ////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma mark -
 #pragma mark UIViewController overrides 
@@ -168,6 +126,23 @@
 - (void) loadView
 {
     [super loadView];
+    
+    arView = [[SGARView alloc] initWithFrame:self.view.bounds];
+    arView.dataSource = self;
+    
+    arView.enableWalking = NO;
+    arView.movableStack.maxStackAmount = 1;
+    
+    SGAnnotationViewContainer* container = [[[SGAnnotationViewContainer alloc] initWithFrame:CGRectZero] autorelease];
+    container.frame = CGRectMake(200.0,
+                                 300.0,
+                                 container.frame.size.width,
+                                 container.frame.size.height);
+    
+    [container addTarget:self action:@selector(containerSelected:) forControlEvents:UIControlEventTouchDown];
+    [arView addContainer:container];
+    [self.view addSubview:arView];
+
     socialRecordTableView = [[UITableView alloc] initWithFrame:CGRectMake(0.0,
                                                                     0.0,
                                                                     self.view.bounds.size.width,
@@ -177,15 +152,10 @@
     socialRecordTableView.delegate = self;
     [self.view addSubview:socialRecordTableView];
     
-    censusTableView = [[UITableView alloc] initWithFrame:socialRecordTableView.bounds style:UITableViewStyleGrouped];
-    censusTableView.dataSource = self;
-    censusTableView.delegate = self;
-    [self.view addSubview:censusTableView];
-    
-    layerMapView.frame = self.view.bounds;    
+    layerMapView.frame = self.view.bounds;
+    socialLayer = [[SGFlickrLayer alloc] init];
+    [layerMapView addLayer:socialLayer];
     [self.view addSubview:layerMapView];
- 
-    arNavigationViewController.title = @"Ground Level";
 }
 
 - (void) viewDidLoad
@@ -198,18 +168,7 @@
     button.frame = CGRectMake(0.0, 0.0, 30.0, 44.0);
     locateButton = [[UIBarButtonItem alloc] initWithCustomView:button];
     locateButton.width = 30.0;
-    
-    UIButton* infoButton = [UIButton buttonWithType:UIButtonTypeInfoDark];
-    [infoButton addTarget:self action:@selector(showCensusInfo:) forControlEvents:UIControlEventTouchUpInside];
-    UIBarButtonItem* barButton = [[UIBarButtonItem alloc] initWithCustomView:infoButton];
-    
-    // When tag == 0 then censusTableView is hidden.
-    infoButton.tag = 0;
-    
-    // Add the bar button to both nav controllers.
-    self.navigationItem.rightBarButtonItem = barButton;
-    [barButton release];
-    
+
     segmentedControl = [[UISegmentedControl alloc] initWithItems:[NSArray arrayWithObjects:@"3D", @"Map", @"List", nil]];
     segmentedControl.segmentedControlStyle = UISegmentedControlStyleBar;  
     [segmentedControl setWidth:70.0 forSegmentAtIndex:0];
@@ -242,13 +201,6 @@
     bucketLabel.font = [UIFont boldSystemFontOfSize:12.0];
     bucketLabel.textAlignment = UITextAlignmentCenter;
     bucketLabel.frame = CGRectMake(0.0, 0.0, 200.0, 20.0);
-    
-    UIBarButtonItem* middleButton = [[UIBarButtonItem alloc] initWithCustomView:bucketLabel];
-    [arNavigationViewController setToolbarItems:[NSArray arrayWithObjects:leftButton, middleButton,
-                                             rightButton, nil]
-                                   animated:NO];
-    
-    [arNavigationViewController setToolbarHidden:NO animated:NO];    
 }
      
 ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -262,11 +214,12 @@
     
     if(segmentedControl.selectedSegmentIndex == 0) {
         locateButton.enabled = NO;
-        [arNavigationViewController reloadAllBuckets];
-        [self.navigationController presentModalViewController:arNavigationViewController animated:YES];
-        segmentedControl.selectedSegmentIndex = 1;
+        [arView reloadData];
+        [arView startAnimation];
+        [self.view bringSubviewToFront:arView];
     } else if(segmentedControl.selectedSegmentIndex == 1) {
         [layerMapView startRetrieving];
+        [arView stopAnimation];
         locateButton.enabled = YES;
         self.title = @"Demo";
         [self.view bringSubviewToFront:layerMapView];
@@ -274,6 +227,8 @@
         locateButton.enabled = NO;
         self.title = @"Nearby Records";
         [socialRecordTableView reloadData];
+        [layerMapView stopRetrieving];
+        [arView stopAnimation];
         [self.view bringSubviewToFront:socialRecordTableView];
     }
 }
@@ -282,48 +237,6 @@
 {
     [self centerMap:locationManager.location.coordinate animated:YES];
 }
-
-- (void) showCensusInfo:(id)button
-{
-    UIButton* infoButton = (UIButton*)button;
-    [censusTableView reloadData];
-    
-    [UIView beginAnimations:@"ShowCensus" context:nil];
-    [UIView setAnimationDuration:1.2];     
-     if(infoButton.tag) {
-         censusTableView.hidden = YES;
-         [UIView setAnimationCurve:UIViewAnimationCurveEaseOut];
-     } else {
-         [self.view bringSubviewToFront:censusTableView];
-         censusTableView.hidden = NO;
-         [UIView setAnimationCurve:UIViewAnimationCurveEaseIn];
-     }
-    [UIView commitAnimations];
-    infoButton.tag = !infoButton.tag;
-}
-
-- (void) nextBucket:(id)button
-{
-    if([arNavigationViewController loadNextBucket])
-        [self updateBuckets:arNavigationViewController.bucketIndex];
-}
-
-- (void) previousBucket:(id)button
-{
-    if([arNavigationViewController loadPreviousBucket])
-        [self updateBuckets:arNavigationViewController.bucketIndex];
-}
-
-- (void) updateBuckets:(NSInteger)bucketIndex
-{
-    if(bucketIndex == 3)
-        bucketLabel.text = @"All";
-    else
-        bucketLabel.text = [[socialLayers objectAtIndex:bucketIndex] title];
-    
-    rightButton.enabled = bucketIndex != 3;
-    leftButton.enabled = bucketIndex != 0;
-}    
 
 - (void) containerSelected:(id)container
 {
@@ -344,10 +257,9 @@
 
 - (MKAnnotationView*) mapView:(MKMapView*)mapView viewForAnnotation:(id<MKAnnotation>)annotation
 {
-    SGPinAnnotationView* annotationView = (SGPinAnnotationView*)[mapView dequeueReusableAnnotationViewWithIdentifier:@"PinView"];
-    
+    SGMapAnnotationView* annotationView = (SGMapAnnotationView*)[mapView dequeueReusableAnnotationViewWithIdentifier:@"PinView"];
     if(!annotationView && ![annotation isKindOfClass:[MKUserLocation class]])
-        annotationView = [[[SGPinAnnotationView alloc] initWithAnnotation:annotation reuseIdentifier:@"PinView"] autorelease];
+        annotationView = [[[SGMapAnnotationView alloc] initWithAnnotation:annotation reuseIdentifier:@"PinView"] autorelease];
     [annotationView setAnnotation:annotation];
     
     SGSocialRecord* record = (SGSocialRecord*)annotation;
@@ -362,24 +274,16 @@
     return annotationView;
 }
 
-- (void)mapView:(MKMapView*)mapView didAddAnnotationViews:(NSArray*)views
-{
-    if([SGLoadingView isLoading])
-        [self lockScreen:NO];
-}
-
 - (void) mapView:(MKMapView*)mapView annotationView:(MKAnnotationView *)view calloutAccessoryControlTapped:(UIControl*)control
 {
     if(control == view.rightCalloutAccessoryView) {
         SGSocialRecord* record = (SGSocialRecord*)view.annotation;
-
-        SGAnnotationView* annotationView = [[[SGAnnotationView alloc] initAtPoint:CGPointZero reuseIdentifier:@"Blah:)"] autorelease];
+        SGGlassAnnotationView* annotationView = [[[SGGlassAnnotationView alloc] initWithFrame:CGRectZero reuseIdentifier:@"Blah:)"] autorelease];
         annotationView.annotation = record;
         [annotationView.closeButton addTarget:annotationView action:@selector(removeFromSuperview) forControlEvents:UIControlEventTouchUpInside];
-        
-        [self setupAnnotationView:annotationView];
-                
-        [annotationView inspectView:YES];
+
+        [self setupAnnotationView:annotationView];                
+        annotationView.inspectionMode = YES;
         
         // Once the view is inspected the dimensions change.
         annotationView.frame = CGRectMake((self.view.frame.size.width - annotationView.frame.size.width) / 2.0,
@@ -397,67 +301,41 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////
 
 - (UITableViewCell*)tableView:(UITableView*)tableView cellForRowAtIndexPath:(NSIndexPath*)indexPath
-{
-    UITableViewCell* cell = nil;
-    
-    NSInteger section = indexPath.section;
+{    
     NSInteger row = indexPath.row;
-    if(tableView == socialRecordTableView) {
-        SGLayer* socialLayer = [socialLayers objectAtIndex:section];
-        NSString* title = [socialLayer title];
-        SGSocialRecordTableCell* socialCell = (SGSocialRecordTableCell*)[tableView dequeueReusableCellWithIdentifier:title];
-        if(!socialCell)
-            socialCell = [[[SGSocialRecordTableCell alloc] initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:title] autorelease];
-        
-        SGSocialRecord* record = [[socialLayer recordAnnotations] objectAtIndex:row];
-        socialCell.userProfile = record;
-        cell = socialCell;
-    } else {
-        SGCensusLayer* layer = [censusLayers objectAtIndex:section];
-        NSString* title = [layer title];
-        cell = [tableView dequeueReusableCellWithIdentifier:title];
-        if(!cell)
-            cell = [[[UITableViewCell alloc] initWithStyle:UITableViewCellStyleValue1 reuseIdentifier:title] autorelease];
-        
-        NSDictionary* information = [layer information];
-        NSArray* keys = [information allKeys];
-        cell.textLabel.text = [keys objectAtIndex:row];
-        cell.detailTextLabel.text = [information objectForKey:[keys objectAtIndex:row]];
-    }
+    NSString* title = [socialLayer title];
+    SGSocialRecordTableCell* socialCell = (SGSocialRecordTableCell*)[tableView dequeueReusableCellWithIdentifier:title];
+    if(!socialCell)
+        socialCell = [[[SGSocialRecordTableCell alloc] initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:title] autorelease];
     
-    return cell;
+    SGSocialRecord* record = [nearbyRecords objectAtIndex:row];
+    socialCell.userProfile = record;
+
+    return socialCell;
 }
 
 - (NSInteger) numberOfSectionsInTableView:(UITableView*)tableView
 {
-    return tableView == socialRecordTableView ? [socialLayers count] : [censusLayers count];
+    return 1;
 }
 
 - (NSInteger) tableView:(UITableView*)tableView numberOfRowsInSection:(NSInteger)section
-{
-    int amount = 0;
-    if(tableView == socialRecordTableView)
-        amount = [[socialLayers objectAtIndex:section] recordAnnotationCount];
-    else 
-        amount = [[[censusLayers objectAtIndex:section] information] count];
-        
-    return amount;
+{        
+    if(nearbyRecords)
+        [nearbyRecords release];
+
+    nearbyRecords = [[self nearbyRecords] retain];
+    return [nearbyRecords count];
 }
 
 - (NSString*) tableView:(UITableView*)tableView titleForHeaderInSection:(NSInteger)section
-{
-    NSString* title = nil;
-    if(tableView == socialRecordTableView)
-        title = [[socialLayers objectAtIndex:section] title];
-    else
-        title = [[censusLayers objectAtIndex:section] title];
-        
-    return title;
+{        
+    return [socialLayer title];
 }
 
 - (void) locationService:(SGLocationService*)service succeededForResponseId:(NSString*)requestId responseObject:(NSObject*)responseObject
 {
-    
+    ;
 }
 
 - (void) locationService:(SGLocationService*)service failedForResponseId:(NSString*)requestId error:(NSError*)error
@@ -472,15 +350,13 @@
 
 - (void) tableView:(UITableView*)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
-    if(tableView == socialRecordTableView) {        
-        SGSocialRecord* record = [[[socialLayers objectAtIndex:indexPath.section] recordAnnotations] objectAtIndex:indexPath.row];
-        [webViewController loadURLString:[record profileURL]];
+    SGSocialRecord* record = [[socialLayer recordAnnotations] objectAtIndex:indexPath.row];
+    [webViewController loadURLString:[record profileURL]];
 
-        webViewController.title = record.name;
-        [self.navigationController pushViewController:webViewController animated:YES];
-        
-        segmentedControl.selectedSegmentIndex = 3;
-    }
+    webViewController.title = record.name;
+    [self.navigationController pushViewController:webViewController animated:YES];
+    
+    segmentedControl.selectedSegmentIndex = 3;
 }
 
 - (NSIndexPath*) tableView:(UITableView*)tableView willSelectRowAtIndexPath:(NSIndexPath*)indexPath
@@ -493,26 +369,11 @@
 #pragma mark CLLocationManager delegate methods 
 //////////////////////////////////////////////////////////////////////////////////////////////// 
 
-- (void) locationManager:(CLLocationManager *)manager didUpdateToLocation:(CLLocation *)newLocation fromLocation:(CLLocation *)oldLocation
+- (void) locationManager:(CLLocationManager*)manager didUpdateToLocation:(CLLocation *)newLocation fromLocation:(CLLocation *)oldLocation
 {
     // This will only be executed once.
     if(!oldLocation) {
-        [self lockScreen:YES];
-        CLLocationCoordinate2D coordinate = newLocation.coordinate;
-        [self centerMap:coordinate animated:YES];
-        
-        // Gather all current location information.
-        SGLatLonNearbyQuery* nearbyQuery = [[SGLatLonNearbyQuery alloc] initWithLayer:nil];
-        nearbyQuery.coordinate = coordinate;
-        
-        // The radius is large because we want to make sure and grab a weather station
-        // within our query.
-        nearbyQuery.radius = 100.0;
-        nearbyQuery.limit = 1;
-        NSString* requestId = nil;
-        for(SGLayer* layer in censusLayers)
-            requestId = [layer nearby:nearbyQuery];
-        
+        [self centerMap:newLocation.coordinate animated:YES];        
         [layerMapView startRetrieving];
     }
 }
@@ -527,27 +388,17 @@
 #pragma mark SGARView delegate methods 
 //////////////////////////////////////////////////////////////////////////////////////////////// 
 
-- (NSArray*) viewController:(SGARNavigationViewController*)nvc
-                                            annotationsForBucketAtIndex:(NSInteger)bucketIndex
+- (NSArray*) arView:(SGARView*)arView annotationsAtLocation:(CLLocation*)location
 {       
-    return [[socialLayers objectAtIndex:bucketIndex] recordAnnotations];
+    return [self nearbyRecords];
 }
 
-- (NSInteger) viewControllerNumberOfBuckets:(SGARNavigationViewController*)nvc
+- (SGAnnotationView*) arView:(SGARView*)view viewForAnnotation:(id<MKAnnotation>)annotation
 {
-    return [socialLayers count];
-}
-
-- (SGAnnotationView*) viewController:(SGARNavigationViewController*)nvc
-                   viewForAnnotation:(id<SGRecordAnnotation>)annotation
-                                    atBucketIndex:(NSInteger)bucketIndex
-{
-    SGLayer* socialLayer = [socialLayers objectAtIndex:bucketIndex];
-    NSString* title = [socialLayer title];
-                       
-    SGAnnotationView* annotationView = [nvc.arView dequeueReuseableAnnotationViewWithIdentifier:title];
+    NSString* title = [socialLayer title]; 
+    SGAnnotationView* annotationView = [arView dequeueReuseableAnnotationViewWithIdentifier:title];
     if(!annotationView)
-        annotationView = [[[SGAnnotationView alloc] initAtPoint:CGPointZero reuseIdentifier:title] autorelease];
+        annotationView = [[[SGGlassAnnotationView alloc] initWithFrame:CGRectZero reuseIdentifier:title] autorelease];
     
     ((SGSocialRecord*)annotation).helperView = annotationView;
     annotationView.annotation = annotation;
@@ -562,19 +413,9 @@
 #pragma mark Helper methods 
 //////////////////////////////////////////////////////////////////////////////////////////////// 
 
-- (void) lockScreen:(BOOL)lock
-{
-    self.navigationController.toolbar.userInteractionEnabled = !lock;
-    self.navigationController.navigationBar.userInteractionEnabled = !lock;
-    [SGLoadingView showLoading:lock lock:NO];
-}
-
-- (void) setupAnnotationView:(SGAnnotationView*)annotationView
+- (void) setupAnnotationView:(SGGlassAnnotationView*)annotationView
 {
     SGSocialRecord* record = (SGSocialRecord*)annotationView.annotation;
-    
-    annotationView.targetType = kSGAnnotationViewTargetType_Glass;
-    annotationView.inspectorType = kSGAnnotationViewInspectorType_Photo;
     
     annotationView.titleLabel.text = record.name;
     annotationView.photoImageView.image = record.photo;    
@@ -612,8 +453,8 @@
             coord = recordAnnotation.coordinate;
             location = [[CLLocation alloc] initWithLatitude:coord.latitude
                                                   longitude:coord.longitude];
-            if(currentDistance < 0.0 || [currentLocation getDistanceFrom:location] < currentDistance) {
-                currentDistance = [currentLocation getDistanceFrom:location];
+            if(currentDistance < 0.0 || [currentLocation distanceFromLocation:location] < currentDistance) {
+                currentDistance = [currentLocation distanceFromLocation:location];
                 annotation = recordAnnotation;
             }
             
@@ -624,6 +465,24 @@
     return annotation;
 }
 
+- (NSArray*) nearbyRecords
+{
+    NSMutableArray* records = [NSMutableArray array];
+    if(socialLayer) {
+        CLLocation* currentLocation = locationManager.location;
+        for(SGSocialRecord* record in [socialLayer recordAnnotations]) {
+            CLLocation* recordLocation = [[CLLocation alloc] initWithLatitude:record.coordinate.latitude
+                                                                    longitude:record.coordinate.longitude];
+            if([currentLocation distanceFromLocation:recordLocation] < 1000.0)
+                [records addObject:record];
+
+            [recordLocation release];
+        }
+    }
+    
+    return records;
+}
+
 - (void) dealloc 
 {
     [socialRecordTableView release];
@@ -631,13 +490,12 @@
     
     [segmentedControl release];
     
-    [arNavigationViewController release];
+    [arView release];
     [layerMapView release];
     
     [locationService release];
-    
-    [socialLayers release];
-    [censusLayers release];
+
+    [socialLayer release];
     
     [leftButton release];
     [rightButton release];

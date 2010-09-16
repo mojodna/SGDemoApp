@@ -34,8 +34,6 @@
 
 #import "SGRecord.h"
 
-static UIImage* kDefaultProfileImage = nil;
-
 @interface SGSocialRecord :  SGRecord  
 {
     /* 

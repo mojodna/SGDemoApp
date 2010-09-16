@@ -53,7 +53,7 @@ static SGUIImageLoader* sharedImageLoader = nil;
 + (SGUIImageLoader*) imageLoader 
 {
     if(!sharedImageLoader)
-        sharedImageLoader = [[sharedImageLoader alloc] init];
+        sharedImageLoader = [[SGUIImageLoader alloc] init];
     
     return sharedImageLoader;
 }

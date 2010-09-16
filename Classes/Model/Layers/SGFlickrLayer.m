@@ -49,9 +49,8 @@
 
 - (id<SGRecordAnnotation>) recordAnnotationFromGeoJSONObject:(NSDictionary*)dictionary
 {
-    SGSocialRecord* record = (SGSocialRecord*)[[[SGFlickr alloc] init] autorelease];
+    SGFlickr* record = [[[SGFlickr alloc] init] autorelease];
     [record updateRecordWithGeoJSONObject:dictionary];
-    
     return record;
 }
 
