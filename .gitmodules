@@ -1,0 +1,12 @@
+[submodule "SGClient"]
+        path = Resources/3rd-Party/SGClient
+        url = http://github.com/simplegeo/SGClient.git
+
+[submodule "SGMapKit"]
+        path = Resources/3rd-Party/SGMapKit
+        url = http://github.com/simplegeo/SGMapKit.git
+
+[submodule "SGAREnvironment"]
+        path = Resources/3rd-Party/SGAREnvironment
+        url = http://github.com/simplegeo/SGAREnvironment.git
+
