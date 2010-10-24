@@ -64,10 +64,9 @@
     
     double requestStartTime;
     double requestEndTime;
- 
+
     @private
     NSMutableDictionary* sgLayers;
-    
     NSMutableArray* presentAnnotations;
     NSMutableArray* newRecordAnnotations;
     
@@ -120,6 +119,8 @@
 */
 @property (nonatomic, assign) double requestEndTime;
 
+- (NSArray*) layers;
+
 /*!
 * @method startRetrieving
 * @abstract ￼ Enables fetching records for each layer from SimpleGeo when the map view's region changes.
@@ -168,6 +169,12 @@
 * @abstract Creates a nearby request for the current viewport and registered layers.
 */
 - (void) retrieveLayers;
+
+/*!
+* @method layers
+* @abstract Returns the layers the map view is handling.
+*/
+- (NSArray*) layers;
 
 #if __IPHONE_4_0 && __IPHONE_OS_VERSION_MIN_REQUIRED >= __IPHONE_4_0
 

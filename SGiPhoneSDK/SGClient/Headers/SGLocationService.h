@@ -110,7 +110,7 @@
 * @property
 * @abstract The type of authorization to apply to all HTTP requests.
 */
-@property (nonatomic, assign) id<SGAuthorization> HTTPAuthorizer;
+@property (nonatomic, retain) id<SGAuthorization> HTTPAuthorizer;
 
 /*!
 * @property
@@ -418,6 +418,15 @@
 */
 - (NSString*) reverseGeocode:(CLLocationCoordinate2D)coord;
 
+/*!
+* @method locate:
+* @abstract Returns the latitude and longitude for a given ip address.
+* @param ipAddress ￼
+* @result A response id that is used to identify the return value from SimpleGeo. 
+* You can use this value in @link SGLocationServiceDelegate delegate @/link. 
+*/
+- (NSString*) locate:(NSString*)ipAddress;
+
 #pragma mark -
 #pragma mark SpotRank
 
@@ -480,6 +489,17 @@
 * You can use this value in @link SGLocationServiceDelegate delegate @/link. 
 */
 - (NSString*) contains:(CLLocationCoordinate2D)coord;
+
+/*!
+ * @method containsIPAddress:
+ * @abstract ￼Does a "pushpin" query through a series of polygon layers and identifies the "cone" of
+ * administrative and other boundaries in which the point lies.
+ * @discussion ￼@link contains: contains: @/link
+ * @param ipAddress ￼The desired ip address
+ * @result A response id that is used to identify the return value from SimpleGeo. 
+ * You can use this value in @link SGLocationServiceDelegate delegate @/link. 
+ */
+- (NSString*) containsIPAddress:(NSString*)ipAddress;
 
 /*!
 * @method boundary:

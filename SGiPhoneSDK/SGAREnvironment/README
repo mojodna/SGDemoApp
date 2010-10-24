@@ -1,4 +1,4 @@
-SGAREnvironment v0.3.7
+SGAREnvironment v0.3.8
 
 ================================================================================
 ABSTRACT:
@@ -11,7 +11,7 @@ USAGE:
 1. Run ./build_dist
 2. Add /path/to/SGAREnvironment-v*.*.*/Headers to the "Header Search Paths" setting.
 3. Add /path/to/SGAREnvironment-v*.*.*/$(PLATFORM_NAME) to "Library Search Paths" setting.
-3. Add the following frameworks: OpenGLES, MapKit, CoreLocation, CoreGraphics, QuartzCore, UIKit
+3. Add the following frameworks: OpenGLES, MapKit, CoreLocation, CoreGraphics, QuartzCore, UIKit, AVFoundation
 and Foundation.
 4. Goto your target's info and add "-all_load -ObjC -l SGAREnvironment" to the "Other Linker Flags" setting under the Build tag. This will
 inform the linker to load the categories from the static library.
@@ -115,6 +115,11 @@ They aren't very pretty at the moment.
 	
 ================================================================================
 CHANGES FROM PREVIOUS VERSIONS:
+Version 0.3.8
+- The prefix file was in charge of importing important frameworks. We need to 
+move those imports into the header files because the prefix might not be the 
+same in other projects.
+
 Version 0.3.7
 - Fixed an issue where the bearing wasn't being calculated properly for certain
 earth quadrants

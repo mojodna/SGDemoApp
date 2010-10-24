@@ -36,31 +36,28 @@
 #import <CoreLocation/CoreLocation.h>
 
 #import "SGLayerMapView.h"
-#import "SGUIImageLoader.h"
-#import "SGWebViewController.h"
+#import "SGRecordViewController.h"
+#import "SGLayerViewController.h"
 
 @interface SGMainViewController : UIViewController <MKMapViewDelegate, SGLocationServiceDelegate, CLLocationManagerDelegate> { 
     
     @private    
     UITableView* socialRecordTableView;
-    UITableView* censusTableView;
                 
     UISegmentedControl* segmentedControl;
     
-    SGWebViewController* webViewController;
+    UINavigationController* recordViewNavigationController;
+    SGRecordViewController* recordViewController;
+    SGLayerViewController* layerViewController;
     
     SGARView* arView;
     SGLayerMapView* layerMapView;
-    SGLayer* socialLayer;    
                     
-    SGUIImageLoader* imageLoader;
     CLLocationManager* locationManager;
     SGLocationService* locationService;
     
     UIBarButtonItem* leftButton, *rightButton, *locateButton;
     UILabel* bucketLabel;
-    
-    NSArray* nearbyRecords;
 }
 
 

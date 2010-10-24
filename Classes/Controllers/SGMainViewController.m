@@ -34,37 +34,29 @@
 
 #import "SGMainViewController.h"
 
-/* Layers */
-#import "SGFlickrLayer.h"
-#import "SGUSZipLayer.h"
-#import "SGWeatherLayer.h"
-#import "SGGeonamesLayer.h"
-
-/* Records */
-#import "SGCensusLayer.h"
-#import "SGFlickr.h"
+#import "SGRecordViewController.h"
 
 /* Views */
 #import "SGPinAnnotationView.h"                                                                                             
-#import "SGSocialRecordTableCell.h"
+#import "SGRecordTableCell.h"
 #import "SGLoadingView.h"
 #import "SGMapAnnotationView.h"
 
+#import "SGDemoLayer.h"
 #import "SGLayerAdditions.h"
 
-@interface SGMainViewController (Private) <UITableViewDelegate, UITableViewDataSource, SGARViewDataSource>
+@interface SGMainViewController (Private) <UITableViewDelegate, UITableViewDataSource, SGARViewDataSource, SGAnnotationViewDelegate>
 
 - (void) initializeLocationService;
+- (void) changeViews:(UISegmentedControl*)sc;
 
 - (void) presentError:(NSError*)error;
-- (NSArray*) nearbyRecords;
-
-- (id<SGRecordAnnotation>) getClosestAnnotation:(NSArray*)annotations;
+- (NSArray*) nearbyRecordsForLayer:(SGLayer*)layer;
 
 - (void) setupAnnotationView:(SGAnnotationView *)annotationView;
 - (void) centerMap:(CLLocationCoordinate2D)coordinate animated:(BOOL)animated;
 
-- (void) updateBuckets:(NSInteger)bucketIndex;
+- (void) presentRecordViewController:(SGRecord*)record;
 
 @end
 
@@ -77,18 +69,16 @@
         self.title = @"Demo";
         self.hidesBottomBarWhenPushed = NO;
         
-        imageLoader = [SGUIImageLoader imageLoader];
         locationManager = [[CLLocationManager alloc] init];
         locationManager.delegate = self;
         [locationManager startUpdatingLocation];        
                     
         layerMapView = [[SGLayerMapView alloc] initWithFrame:CGRectZero];
-        layerMapView.limit = 50;
+        layerMapView.limit = 25;
+        layerMapView.showsUserLocation = YES;
         layerMapView.delegate = self;
 
         [self initializeLocationService];
-    
-        webViewController = [[SGWebViewController alloc] init];
     }
     
     return self;
@@ -116,6 +106,7 @@
     
     SGOAuth* oAuth = [[SGOAuth alloc] initWithKey:key secret:secret];
     [SGLocationService sharedLocationService].HTTPAuthorizer = oAuth;
+    [[SGLocationService sharedLocationService] addDelegate:self];
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -123,24 +114,32 @@
 #pragma mark UIViewController overrides 
 //////////////////////////////////////////////////////////////////////////////////////////////// 
 
+- (void) viewWillAppear:(BOOL)animated
+{
+    [super viewWillAppear:animated];
+    [self changeViews:segmentedControl];
+}
+
+- (void) viewWillDisappear:(BOOL)animated
+{
+    [super viewWillDisappear:animated];
+    
+    [layerMapView stopRetrieving];
+    [arView stopAnimation];
+}
+
 - (void) loadView
 {
     [super loadView];
     
+    layerViewController = [[SGLayerViewController alloc] initWithLayerMapView:layerMapView];
+    
     arView = [[SGARView alloc] initWithFrame:self.view.bounds];
     arView.dataSource = self;
     
-    arView.enableWalking = NO;
+    arView.enableWalking = YES;
     arView.movableStack.maxStackAmount = 1;
-    
-    SGAnnotationViewContainer* container = [[[SGAnnotationViewContainer alloc] initWithFrame:CGRectZero] autorelease];
-    container.frame = CGRectMake(200.0,
-                                 300.0,
-                                 container.frame.size.width,
-                                 container.frame.size.height);
-    
-    [container addTarget:self action:@selector(containerSelected:) forControlEvents:UIControlEventTouchDown];
-    [arView addContainer:container];
+    arView.radar.frame = CGRectMake(28.0, 28.0, 100.0, 100.0);    
     [self.view addSubview:arView];
 
     socialRecordTableView = [[UITableView alloc] initWithFrame:CGRectMake(0.0,
@@ -153,9 +152,10 @@
     [self.view addSubview:socialRecordTableView];
     
     layerMapView.frame = self.view.bounds;
-    socialLayer = [[SGFlickrLayer alloc] init];
-    [layerMapView addLayer:socialLayer];
     [self.view addSubview:layerMapView];
+    
+    recordViewController = [[SGRecordViewController alloc] initWithStyle:UITableViewStyleGrouped];
+    recordViewNavigationController = [[UINavigationController alloc] initWithRootViewController:recordViewController];
 }
 
 - (void) viewDidLoad
@@ -182,25 +182,13 @@
     [self setToolbarItems:[NSArray arrayWithObjects:locateButton, segmentedControlButton, nil] animated:NO];
     [segmentedControlButton release];    
     
-    [self.navigationController setToolbarHidden:NO animated:NO];
+    [self.navigationController setToolbarHidden:NO animated:NO];    
     
-    leftButton = [[UIBarButtonItem alloc] initWithImage:[UIImage imageNamed:@"LeftButton.png"]
-                                                  style:UIBarButtonItemStylePlain 
-                                                 target:self
-                                                 action:@selector(previousBucket:)];
-    leftButton.enabled = NO;
-    
-    rightButton = [[UIBarButtonItem alloc] initWithImage:[UIImage imageNamed:@"RightButton.png"]
-                                                   style:UIBarButtonItemStylePlain 
-                                                  target:self
-                                                  action:@selector(nextBucket:)];
-    
-    bucketLabel = [[UILabel alloc] initWithFrame:CGRectZero];
-    bucketLabel.textColor = [UIColor whiteColor];
-    bucketLabel.backgroundColor = [UIColor clearColor];
-    bucketLabel.font = [UIFont boldSystemFontOfSize:12.0];
-    bucketLabel.textAlignment = UITextAlignmentCenter;
-    bucketLabel.frame = CGRectMake(0.0, 0.0, 200.0, 20.0);
+    UIBarButtonItem* layerButton = [[UIBarButtonItem alloc] initWithTitle:@"Layer" 
+                                                                    style:UIBarButtonItemStylePlain
+                                                                   target:self
+                                                                   action:@selector(loadLayerViewController:)];
+    self.navigationItem.rightBarButtonItem = layerButton;
 }
      
 ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -208,10 +196,19 @@
 #pragma mark UIButton methods 
 //////////////////////////////////////////////////////////////////////////////////////////////// 
 
+- (void) close:(id)button
+{
+    [recordViewNavigationController dismissModalViewControllerAnimated:YES];
+    recordViewController.navigationItem.rightBarButtonItem = nil;
+}
+
+- (void) loadLayerViewController:(id)button
+{
+    [self.navigationController pushViewController:layerViewController animated:YES];
+}
+
 - (void) changeViews:(UISegmentedControl*)sc
 {
-    [layerMapView stopRetrieving];
-    
     if(segmentedControl.selectedSegmentIndex == 0) {
         locateButton.enabled = NO;
         [arView reloadData];
@@ -238,11 +235,6 @@
     [self centerMap:locationManager.location.coordinate animated:YES];
 }
 
-- (void) containerSelected:(id)container
-{
-    // TODO
-}
-
 ////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma mark -
 #pragma mark MKMapView delegate methods 
@@ -262,13 +254,14 @@
         annotationView = [[[SGMapAnnotationView alloc] initWithAnnotation:annotation reuseIdentifier:@"PinView"] autorelease];
     [annotationView setAnnotation:annotation];
     
-    SGSocialRecord* record = (SGSocialRecord*)annotation;
+    SGRecord* record = (SGRecord*)annotation;
     if([record isKindOfClass:[MKUserLocation class]])
         annotationView = nil;
     else {    
-        annotationView.canShowCallout = YES;        
-        [imageLoader addObjectToImageLoader:record];
-        annotationView.pinColor = [record pinColor];
+        annotationView.canShowCallout = YES;
+        for(SGDemoLayer* layer in [layerMapView layers])
+            if([layer.layerId isEqualToString:record.layer])
+                annotationView.pinColor = layer.pinColor;
     }
     
     return annotationView;
@@ -277,21 +270,8 @@
 - (void) mapView:(MKMapView*)mapView annotationView:(MKAnnotationView *)view calloutAccessoryControlTapped:(UIControl*)control
 {
     if(control == view.rightCalloutAccessoryView) {
-        SGSocialRecord* record = (SGSocialRecord*)view.annotation;
-        SGGlassAnnotationView* annotationView = [[[SGGlassAnnotationView alloc] initWithFrame:CGRectZero reuseIdentifier:@"Blah:)"] autorelease];
-        annotationView.annotation = record;
-        [annotationView.closeButton addTarget:annotationView action:@selector(removeFromSuperview) forControlEvents:UIControlEventTouchUpInside];
-
-        [self setupAnnotationView:annotationView];                
-        annotationView.inspectionMode = YES;
-        
-        // Once the view is inspected the dimensions change.
-        annotationView.frame = CGRectMake((self.view.frame.size.width - annotationView.frame.size.width) / 2.0,
-                                          (self.view.frame.size.height - annotationView.frame.size.height) / 2.0,
-                                          annotationView.frame.size.width,
-                                          annotationView.frame.size.height);
-        
-        [self.view addSubview:annotationView];
+        SGRecord* record = (SGRecord*)view.annotation;        
+        [self presentRecordViewController:record];
     }
 }
 
@@ -300,37 +280,43 @@
 #pragma mark UITableView data source methods 
 ////////////////////////////////////////////////////////////////////////////////////////////////
 
-- (UITableViewCell*)tableView:(UITableView*)tableView cellForRowAtIndexPath:(NSIndexPath*)indexPath
+- (UITableViewCell*) tableView:(UITableView*)tableView cellForRowAtIndexPath:(NSIndexPath*)indexPath
 {    
-    NSInteger row = indexPath.row;
-    NSString* title = [socialLayer title];
-    SGSocialRecordTableCell* socialCell = (SGSocialRecordTableCell*)[tableView dequeueReusableCellWithIdentifier:title];
-    if(!socialCell)
-        socialCell = [[[SGSocialRecordTableCell alloc] initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:title] autorelease];
+    SGLayer* layer = [[layerMapView layers] objectAtIndex:indexPath.section];
+    NSString* title = [layer layerId];
+    SGRecordTableCell* cell = (SGRecordTableCell*)[tableView dequeueReusableCellWithIdentifier:title];
+    if(!cell)
+        cell = [[[SGRecordTableCell alloc] initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:title] autorelease];
     
-    SGSocialRecord* record = [nearbyRecords objectAtIndex:row];
-    socialCell.userProfile = record;
+    SGRecord* record = [[self nearbyRecordsForLayer:layer] objectAtIndex:indexPath.row];
+    cell.record = record;
 
-    return socialCell;
+    return cell;
 }
 
 - (NSInteger) numberOfSectionsInTableView:(UITableView*)tableView
 {
-    return 1;
+    NSArray* layers = [layerMapView layers];
+    return layers ? [layers count] : 0;
 }
 
 - (NSInteger) tableView:(UITableView*)tableView numberOfRowsInSection:(NSInteger)section
 {        
-    if(nearbyRecords)
-        [nearbyRecords release];
-
-    nearbyRecords = [[self nearbyRecords] retain];
-    return [nearbyRecords count];
+    return [[self nearbyRecordsForLayer:[[layerMapView layers] objectAtIndex:section]] count];
 }
 
 - (NSString*) tableView:(UITableView*)tableView titleForHeaderInSection:(NSInteger)section
 {        
-    return [socialLayer title];
+    return [[[layerMapView layers] objectAtIndex:section] layerId];
+}
+
+- (void) tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath*)indexPath
+{
+    SGLayer* layer = [[layerMapView layers] objectAtIndex:indexPath.section];
+    SGRecord* record = [[self nearbyRecordsForLayer:layer] objectAtIndex:indexPath.row];
+    SGRecordViewController* viewController = [[SGRecordViewController alloc] initWithStyle:UITableViewStylePlain];
+    viewController.record = record;
+    [self.navigationController pushViewController:viewController animated:YES];
 }
 
 - (void) locationService:(SGLocationService*)service succeededForResponseId:(NSString*)requestId responseObject:(NSObject*)responseObject
@@ -341,27 +327,7 @@
 - (void) locationService:(SGLocationService*)service failedForResponseId:(NSString*)requestId error:(NSError*)error
 {
     [self presentError:error];
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////
-#pragma mark -
-#pragma mark UITableView delegate methods 
-//////////////////////////////////////////////////////////////////////////////////////////////// 
-
-- (void) tableView:(UITableView*)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
-{
-    SGSocialRecord* record = [[socialLayer recordAnnotations] objectAtIndex:indexPath.row];
-    [webViewController loadURLString:[record profileURL]];
-
-    webViewController.title = record.name;
-    [self.navigationController pushViewController:webViewController animated:YES];
-    
-    segmentedControl.selectedSegmentIndex = 3;
-}
-
-- (NSIndexPath*) tableView:(UITableView*)tableView willSelectRowAtIndexPath:(NSIndexPath*)indexPath
-{
-    return tableView == censusTableView ? nil : indexPath;
+    [layerMapView stopRetrieving];
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -381,6 +347,7 @@
 -  (void)locationManager:(CLLocationManager *)manager didFailWithError:(NSError *)error
 {
     [self presentError:error];
+    [layerMapView stopRetrieving];
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -390,22 +357,30 @@
 
 - (NSArray*) arView:(SGARView*)arView annotationsAtLocation:(CLLocation*)location
 {       
-    return [self nearbyRecords];
+    NSMutableArray* records = [NSMutableArray array];
+    for(SGDemoLayer* layer in [layerMapView layers])
+        [records addObjectsFromArray:[self nearbyRecordsForLayer:layer]];
+
+    return records;
 }
 
 - (SGAnnotationView*) arView:(SGARView*)view viewForAnnotation:(id<MKAnnotation>)annotation
 {
-    NSString* title = [socialLayer title]; 
+    SGLayer* layer = [[layerMapView layers] objectAtIndex:0];
+    NSString* title = [layer layerId]; 
     SGAnnotationView* annotationView = [arView dequeueReuseableAnnotationViewWithIdentifier:title];
     if(!annotationView)
         annotationView = [[[SGGlassAnnotationView alloc] initWithFrame:CGRectZero reuseIdentifier:title] autorelease];
     
-    ((SGSocialRecord*)annotation).helperView = annotationView;
     annotationView.annotation = annotation;
-    
     [self setupAnnotationView:annotationView];
-    
+
     return annotationView;
+}
+- (UIView*) shouldInspectAnnotationView:(SGAnnotationView*)annotationView
+{
+    [self presentRecordViewController:(SGRecord*)annotationView.annotation];
+    return NO;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -415,14 +390,22 @@
 
 - (void) setupAnnotationView:(SGGlassAnnotationView*)annotationView
 {
-    SGSocialRecord* record = (SGSocialRecord*)annotationView.annotation;
-    
-    annotationView.titleLabel.text = record.name;
-    annotationView.photoImageView.image = record.photo;    
-    annotationView.messageLabel.text = record.body;
-    annotationView.targetImageView.image = record.profileImage;
-    
-    [annotationView.radarTargetButton setImage:record.serviceImage forState:UIControlStateNormal];
+    SGRecord* record = (SGRecord*)annotationView.annotation;
+    annotationView.titleLabel.text = record.recordId;
+    annotationView.messageLabel.text = record.layer;
+    annotationView.inspectionMode = YES;
+    annotationView.delegate = self;
+    annotationView.closeButton.hidden = YES;
+}
+
+- (void) presentRecordViewController:(SGRecord*)record
+{
+    recordViewController.record = record;
+    UIBarButtonItem* closeButton = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemDone
+                                                                                 target:self
+                                                                                 action:@selector(close:)];
+    recordViewController.navigationItem.rightBarButtonItem = closeButton;
+    [self presentModalViewController:recordViewNavigationController animated:YES];    
 }
 
 - (void) presentError:(NSError*)error
@@ -436,47 +419,21 @@
     [alertView release];    
 }
 
-/* 
- There are times when we can recieve multiple record annotations for
- a large enough radius. We want to grab the closest annotation
- */
-- (id<SGRecordAnnotation>) getClosestAnnotation:(NSArray*)recordAnnotations
-{
-    id<SGRecordAnnotation> annotation = nil;
-    double currentDistance = -1.0;
-    
-    CLLocation* currentLocation = [locationManager location];
-    if(recordAnnotations && [recordAnnotations count]) {
-        CLLocation* location = nil;
-        CLLocationCoordinate2D coord;
-        for(id<SGRecordAnnotation> recordAnnotation in recordAnnotations) {
-            coord = recordAnnotation.coordinate;
-            location = [[CLLocation alloc] initWithLatitude:coord.latitude
-                                                  longitude:coord.longitude];
-            if(currentDistance < 0.0 || [currentLocation distanceFromLocation:location] < currentDistance) {
-                currentDistance = [currentLocation distanceFromLocation:location];
-                annotation = recordAnnotation;
-            }
-            
-            [location release];
-        }
-    }
-
-    return annotation;
-}
-
-- (NSArray*) nearbyRecords
+- (NSArray*) nearbyRecordsForLayer:(SGLayer*)layer
 {
     NSMutableArray* records = [NSMutableArray array];
-    if(socialLayer) {
+    if(layer) {
         CLLocation* currentLocation = locationManager.location;
-        for(SGSocialRecord* record in [socialLayer recordAnnotations]) {
+        for(SGRecord* record in [layer recordAnnotations]) {
             CLLocation* recordLocation = [[CLLocation alloc] initWithLatitude:record.coordinate.latitude
                                                                     longitude:record.coordinate.longitude];
             if([currentLocation distanceFromLocation:recordLocation] < 1000.0)
                 [records addObject:record];
 
             [recordLocation release];
+            
+            if([records count] > 10)
+                break;
         }
     }
     
@@ -486,20 +443,15 @@
 - (void) dealloc 
 {
     [socialRecordTableView release];
-    [censusTableView release];
-    
+    [recordViewController release];
+    [recordViewNavigationController release];
     [segmentedControl release];
     
     [arView release];
     [layerMapView release];
     
     [locationService release];
-
-    [socialLayer release];
-    
-    [leftButton release];
-    [rightButton release];
-    
+        
     [super dealloc];
 }
 

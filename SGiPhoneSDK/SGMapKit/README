@@ -70,6 +70,9 @@ Headers
 	
 ================================================================================
 CHANGES FROM PREVIOUS VERSIONS:
+Versions 1.0.0
+- Made it easier to visualize layers in the SGLayerMapView.
+
 Versions 0.4.2
 - PushPin regions can now be loaded into the MapView for any given location along with a type filter.
 

@@ -110,6 +110,10 @@ of the feature in GeoJSON format in the geometry field.
 <dd><p>&#65532;Does a "pushpin" query through a series of polygon layers and identifies the "cone" of
 administrative and other boundaries in which the point lies.
 </p></dd>
+<dt><tt><a href="index.html#//simplegeo/occ/instm/SGLocationService/containsIPAddress:" target="_top">-containsIPAddress:</a></tt></dt>
+<dd><p>&#65532;Does a "pushpin" query through a series of polygon layers and identifies the "cone" of
+administrative and other boundaries in which the point lies.
+</p></dd>
 <dt><tt><a href="index.html#//simplegeo/occ/instm/SGLocationService/deleteRecord:layer:" target="_top">-deleteRecord:layer:</a></tt></dt>
 <dd></dd>
 <dt><tt><a href="index.html#//simplegeo/occ/instm/SGLocationService/deleteRecordAnnotation:" target="_top">-deleteRecordAnnotation:</a></tt></dt>
@@ -141,6 +145,9 @@ a background processes actions. (e.g duration, number of records cached).
 </p></dd>
 <dt><tt><a href="index.html#//simplegeo/occ/instm/SGLocationService/leaveBackground" target="_top">-leaveBackground</a></tt></dt>
 <dd><p>&#65532;Notifies the location service that it has entered the foreground.
+</p></dd>
+<dt><tt><a href="index.html#//simplegeo/occ/instm/SGLocationService/locate:" target="_top">-locate:</a></tt></dt>
+<dd><p>Returns the latitude and longitude for a given ip address.
 </p></dd>
 <dt><tt><a href="index.html#//simplegeo/occ/instm/SGLocationService/nearby:" target="_top">-nearby:</a></tt></dt>
 <dd><p>&#65532;Retieves records based on the <!-- a logicalPath="//simplegeo/ooc/cl/SGNearbyQuery" -->SGNearbyQuery<!-- /a --> 
@@ -349,6 +356,39 @@ Legislative District: In the US, a congressional district for the currently sitt
 Census Tract: As defined by the US Census Bureau in the most recently published census (2000). 
 </p>
 <p>Other values are possible, so this list will be updated from time to time.
+<!-- end discussion -->
+</p>
+<p></p>
+<hr>
+<!-- headerDoc=instm;  uid=//simplegeo/occ/instm/SGLocationService/containsIPAddress:;   name=SGLocationService::containsIPAddress: --><a name="//simplegeo/occ/instm/SGLocationService/containsIPAddress:"></a>
+<table border="0" cellpadding="2" cellspacing="2" width="300"><tr><td valign="top" height="12" colspan="5">
+<h3><a name="containsIPAddress:">containsIPAddress:</a></h3>
+</td></tr></table>
+<hr>
+<p><!-- begin abstract --></p>
+<p>&#65532;Does a "pushpin" query through a series of polygon layers and identifies the "cone" of
+administrative and other boundaries in which the point lies.
+<!-- end abstract --></p>
+<p></p>
+<div class="declaration_indent">
+<pre>- (<!-- a logicalPath="//simplegeo/occ/cl/NSString //simplegeo/occ/tdef/NSString //simplegeo/occ/tag/NSString //simplegeo/occ/econst/NSString //simplegeo/occ/struct/NSString //simplegeo/occ/clconst/NSString //simplegeo/occ/intf/NSString" --><span class="type">NSString</span><!-- /a --><span class="type">*</span>) <!-- a logicalPath="//simplegeo/occ/instm/containsIPAddress //simplegeo/occ/clm/containsIPAddress //simplegeo/occ/intfcm/containsIPAddress //simplegeo/occ/intfm/containsIPAddress //simplegeo/occ/func/containsIPAddress //simplegeo/occ/ftmplt/containsIPAddress //simplegeo/occ/defn/containsIPAddress //simplegeo/occ/macro/containsIPAddress" --><span class="function">containsIPAddress</span><!-- /a -->:(<!-- a logicalPath="//simplegeo/occ/cl/NSString //simplegeo/occ/tdef/NSString //simplegeo/occ/tag/NSString //simplegeo/occ/econst/NSString //simplegeo/occ/struct/NSString //simplegeo/occ/clconst/NSString //simplegeo/occ/intf/NSString" --><span class="type">NSString</span><!-- /a --><span class="type">*</span>)<!-- a logicalPath="//simplegeo/occ/econst/ipAddress //simplegeo/occ/data/ipAddress" --><span class="var">ipAddress</span><!-- /a -->; </pre>
+</div>
+<h5 class="tight"><font face="Lucida Grande,Helvetica,Arial">Parameters</font></h5>
+<div class="param_indent">
+<dl>
+<dt><code>ipAddress</code></dt>
+<dd><p>&#65532;The desired ip address</p></dd>
+</dl>
+</div>
+<h5 class="tight"><font face="Lucida Grande,Helvetica,Arial">Return Value</font></h5>
+<p><!-- begin return value -->A response id that is used to identify the return value from SimpleGeo. 
+You can use this value in <a href="../../../../Documentation/SGLocationService_h/Protocols/SGLocationServiceDelegate/index.html#//simplegeo/occ/intf/SGLocationServiceDelegate" logicalPath="//simplegeo/occ/intf/SGLocationServiceDelegate">delegate</a>. 
+
+<!-- end return value --></p>
+<h5 class="tight">
+<font face="Lucida Grande,Helvetica,Arial">Discussion</font>
+</h5>
+<!-- begin discussion --><p>&#65532;<a href="../../../../Documentation/SGLocationService_h/Classes/SGLocationService/index.html#//simplegeo/occ/instm/SGLocationService/contains:" logicalPath="//simplegeo/occ/instm/SGLocationService/contains:">contains:</a>
 <!-- end discussion -->
 </p>
 <p></p>
@@ -691,6 +731,32 @@ You can use this value in <a href="../../../../Documentation/SGLocationService_h
 this method should be to allow the location service to cleanup and commit anything in its managed memory space to disk.
 <!-- end discussion -->
 </p>
+<p></p>
+<hr>
+<!-- headerDoc=instm;  uid=//simplegeo/occ/instm/SGLocationService/locate:;   name=SGLocationService::locate: --><a name="//simplegeo/occ/instm/SGLocationService/locate:"></a>
+<table border="0" cellpadding="2" cellspacing="2" width="300"><tr><td valign="top" height="12" colspan="5">
+<h3><a name="locate:">locate:</a></h3>
+</td></tr></table>
+<hr>
+<p><!-- begin abstract --></p>
+<p>Returns the latitude and longitude for a given ip address.
+<!-- end abstract --></p>
+<p></p>
+<div class="declaration_indent">
+<pre>- (<!-- a logicalPath="//simplegeo/occ/cl/NSString //simplegeo/occ/tdef/NSString //simplegeo/occ/tag/NSString //simplegeo/occ/econst/NSString //simplegeo/occ/struct/NSString //simplegeo/occ/clconst/NSString //simplegeo/occ/intf/NSString" --><span class="type">NSString</span><!-- /a --><span class="type">*</span>) <!-- a logicalPath="//simplegeo/occ/instm/locate //simplegeo/occ/clm/locate //simplegeo/occ/intfcm/locate //simplegeo/occ/intfm/locate //simplegeo/occ/func/locate //simplegeo/occ/ftmplt/locate //simplegeo/occ/defn/locate //simplegeo/occ/macro/locate" --><span class="function">locate</span><!-- /a -->:(<!-- a logicalPath="//simplegeo/occ/cl/NSString //simplegeo/occ/tdef/NSString //simplegeo/occ/tag/NSString //simplegeo/occ/econst/NSString //simplegeo/occ/struct/NSString //simplegeo/occ/clconst/NSString //simplegeo/occ/intf/NSString" --><span class="type">NSString</span><!-- /a --><span class="type">*</span>)<!-- a logicalPath="//simplegeo/occ/econst/ipAddress //simplegeo/occ/data/ipAddress" --><span class="var">ipAddress</span><!-- /a -->; </pre>
+</div>
+<h5 class="tight"><font face="Lucida Grande,Helvetica,Arial">Parameters</font></h5>
+<div class="param_indent">
+<dl>
+<dt><code>ipAddress</code></dt>
+<dd><p>&#65532;</p></dd>
+</dl>
+</div>
+<h5 class="tight"><font face="Lucida Grande,Helvetica,Arial">Return Value</font></h5>
+<p><!-- begin return value -->A response id that is used to identify the return value from SimpleGeo. 
+You can use this value in <a href="../../../../Documentation/SGLocationService_h/Protocols/SGLocationServiceDelegate/index.html#//simplegeo/occ/intf/SGLocationServiceDelegate" logicalPath="//simplegeo/occ/intf/SGLocationServiceDelegate">delegate</a>. 
+
+<!-- end return value --></p>
 <p></p>
 <hr>
 <!-- headerDoc=instm;  uid=//simplegeo/occ/instm/SGLocationService/nearby:;   name=SGLocationService::nearby: --><a name="//simplegeo/occ/instm/SGLocationService/nearby:"></a>
@@ -1214,7 +1280,7 @@ for notifications in the background.
 <div class="declaration_indent">
 <pre>@property (
     <span class="param">nonatomic</span>,
-    <span class="param">assign</span>) <!-- a logicalPath="//simplegeo/occ/cl/id //simplegeo/occ/tdef/id //simplegeo/occ/tag/id //simplegeo/occ/econst/id //simplegeo/occ/struct/id //simplegeo/occ/clconst/id //simplegeo/occ/intf/id" --><span class="type">id</span><!-- /a -->&lt;<span class="template">SGAuthorization</span>&gt; <!-- a logicalPath="//simplegeo/occ/econst/HTTPAuthorizer //simplegeo/occ/data/HTTPAuthorizer" --><span class="var">HTTPAuthorizer</span><!-- /a -->; </pre>
+    <span class="param">retain</span>) <!-- a logicalPath="//simplegeo/occ/cl/id //simplegeo/occ/tdef/id //simplegeo/occ/tag/id //simplegeo/occ/econst/id //simplegeo/occ/struct/id //simplegeo/occ/clconst/id //simplegeo/occ/intf/id" --><span class="type">id</span><!-- /a -->&lt;<span class="template">SGAuthorization</span>&gt; <!-- a logicalPath="//simplegeo/occ/econst/HTTPAuthorizer //simplegeo/occ/data/HTTPAuthorizer" --><span class="var">HTTPAuthorizer</span><!-- /a -->; </pre>
 </div>
 <p></p>
 <hr>
@@ -1304,7 +1370,7 @@ for notifications in the background.
 
 <!-- end of footer -->
 </p>
-<p>&copy; SimpleGeo Last Updated: 09/16/2010
+<p>&copy; SimpleGeo Last Updated: 10/24/2010
 </p>
 </div>
 </body>

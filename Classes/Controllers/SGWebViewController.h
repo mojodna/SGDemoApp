@@ -36,7 +36,7 @@
 
 
 @interface SGWebViewController : UIViewController <UIWebViewDelegate> {
-
+    
     @private
     UIWebView* webView;
 }

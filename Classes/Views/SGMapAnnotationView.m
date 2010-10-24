@@ -33,57 +33,29 @@
 //
 
 #import "SGMapAnnotationView.h"
-#import "SGSocialRecord.h"
-
-static UIImage* DefaultImage = nil;
 
 @implementation SGMapAnnotationView
 
 - (id) initWithAnnotation:(id<MKAnnotation>)annotation reuseIdentifier:(NSString*)ident
 {
     if(self = [super initWithAnnotation:annotation reuseIdentifier:ident]) {
-        
-        if(!DefaultImage)
-            DefaultImage = [[UIImage imageNamed:@"SGDefaultProfilePicture.png"] retain];
-        
+                
         self.rightCalloutAccessoryView = [UIButton buttonWithType:UIButtonTypeInfoLight];
-        
-        recordImageView = [[UIImageView alloc] initWithImage:nil];
-        recordImageView.frame = CGRectMake(14.0, 14.0, 16.0, 16.0);
-        
-        UIImageView* imageView = [[UIImageView alloc] initWithImage:DefaultImage];
-        imageView.frame = CGRectMake(0.0, 0.0, 28.0, 28.0);
-        [imageView addSubview:recordImageView];
-        
+                        
         self.animatesDrop = YES;
-        self.leftCalloutAccessoryView = imageView;
     }
     
     return self;
 }
 
 - (void) prepareForReuse
-{
-    if(self.annotation)
-        ((SGSocialRecord*)self.annotation).helperView = nil;
-    
+{    
     [super prepareForReuse];    
 }
 
 - (void) layoutSubviews
 {
-    [super layoutSubviews];
-        
-    SGSocialRecord* record = (SGSocialRecord*)self.annotation;
-    
-    UIImage* image = record.profileImage;
-    
-    if(!image || [image isKindOfClass:[NSNull class]])
-        image = DefaultImage;    
-    
-    recordImageView.image = record.serviceImage;
-    
-    ((UIImageView*)self.leftCalloutAccessoryView).image = image; 
+    [super layoutSubviews];        
 }
 
 
