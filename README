@@ -1,4 +1,4 @@
-SGDemoApp 0.9.6
+SGDemoApp 1.0.0
 
 ================================================================================
 ABSTRACT:
@@ -18,6 +18,11 @@ In order to run the demo, you must already possess an OAuth access and secret ke
 from http://simplegeo.com. The demo application defines a default OAuth token which
 will not work. You must update the file at Resources/Token.plist with your personal
 OAuth token or else the application will complain about the OAuth token and exit.
+
+To access layers from SimpleGeo you must first accept the ToS that comes with the layer.
+After creating an account, layers can be accessed from the SimpleGeo marketplace. Once
+you have the name of the layer you want to use, you can add the layer as a new data source
+to the SGLayerViewController.
 
 To update the repositories that this demo application depends on, run ./update_sg_sdk
 within the project directory. The SimpleGeo static libraries that come packaged with
@@ -47,74 +52,11 @@ RUNTIME REQUIREMENTS:
 iPhone OS 4.0
 
 ================================================================================
-PACKAGING LIST:
-
-Model
-Contains all of the data models.
-
-    Layers
-    Contains the single subclass of SGLayer used for all SGRecord.
-        
-        SGFlickrLayer
-        A subclass of SGLayer that builds SGFlickrs.
-        
-    Records
-    Contains all subclasses of SGRecord.
-    
-        SGSocialRecord
-        A subclass of SGManagedRecord. Since there are some commonalities between
-        the user-defined properties for a Brightkite, Tweet and Flickr, it made
-        sense to create another abstraction layer. This type of record holds onto
-        properties such as profile image and profile image, absolute URL.
-        
-        SGBrightkite
-        A subclass of SGSocialRecord that interprets the Brightkite GeoJSON encoded
-        object recieved from SimpleGeo.
-        
-    
-TableCells
-Contains all subclasses of UITableViewCell.
-    
-    SGSocialRecordTableCell
-    Displays a SGSocialRecord in a UITableView.
-    
-SGAdditions
-Contains all categories.
-    
-    SGRecordAdditions
-    Defines helper methods for SGRecord subclasses.
-    
-    UIImageAdditions
-    Helper methods for resizing images.
-    
-    SGLayerAdditions
-    Defines a single method that helps produce
-    a proper title for a give SGLayer subclass.
-    
-Controllers
-Contains all subclasses of UIViewController.
-
-    SGMainViewController
-    The main view controller which implements a total of 7 protocols. All actions
-    take place within this view controller.
-    
-    SGWebViewController
-    A simple view controller that loads a URL into a webview.
-    
-Views
-    SGPinAnotationView
-    A simple map annotation view that will update its accessory views when it
-    is asked to layout its subviews.
-    
-    SGLoadingView
-    This view displays a title label along with a activity view.
-    
-    
-SGDemoAppDelegate
-The application delegate.
-
-================================================================================
 CHANGES FROM PREVIOUS VERSIONS:
+Version 1.0.0
+- Merged in the feature/dynamic-layer-creation branch that enables a user
+to add layers to the map
+
 Version 0.9.6
 - Update to version iOS 4.1
 - Modified the SGMainViewController class so it is compatible with the iOS 4.0
