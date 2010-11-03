@@ -63,7 +63,7 @@
     [super layoutSubviews];
     
     if(record) {
-        self.textLabel.text = record.recordId;
+        self.textLabel.text = [record title];
         self.detailTextLabel.text = record.layer;
     }
 }
