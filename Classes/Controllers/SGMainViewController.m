@@ -99,7 +99,7 @@
     NSString* secret = [token objectForKey:@"secret"];
 
     
-    if([key isEqualToString:@"my-secret"] || [secret isEqualToString:@"my-secret"]) {
+    if([key isEqualToString:@"my_secret"] || [secret isEqualToString:@"my_secret"]) {
         NSLog(@"ERROR!!! - Please change the credentials in Resources/Token.plist");
         exit(1);
     }   
