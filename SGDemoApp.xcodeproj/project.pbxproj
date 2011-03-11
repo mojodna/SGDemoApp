@@ -68,6 +68,7 @@
 		4AFD5C18125A6DFD00C66A87 /* SGTierViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 4AFD5C17125A6DFD00C66A87 /* SGTierViewController.m */; };
 		4AFD5C1E125A73E900C66A87 /* SGWebViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 4AFD5C1D125A73E900C66A87 /* SGWebViewController.m */; };
 		4AFD5C98125A7CDD00C66A87 /* SGDemoRecord.m in Sources */ = {isa = PBXBuildFile; fileRef = 4AFD5C97125A7CDD00C66A87 /* SGDemoRecord.m */; };
+		5DF4385F132AC12900CA84E0 /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = 5DF4385E132AC12900CA84E0 /* README.md */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -102,7 +103,6 @@
 		4A2424E610DB10FC005D1CB1 /* CoreLocation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreLocation.framework; path = System/Library/Frameworks/CoreLocation.framework; sourceTree = SDKROOT; };
 		4A24250710DB1119005D1CB1 /* MapKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MapKit.framework; path = System/Library/Frameworks/MapKit.framework; sourceTree = SDKROOT; };
 		4A24250E10DB112D005D1CB1 /* QuartzCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuartzCore.framework; path = System/Library/Frameworks/QuartzCore.framework; sourceTree = SDKROOT; };
-		4A24270310DB156D005D1CB1 /* README */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = README; sourceTree = "<group>"; };
 		4A75535411DBD47A003E8D8A /* update_sg_sdk */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = update_sg_sdk; sourceTree = "<group>"; };
 		4A8071C8124A551900D2F3DE /* SGDemoLayer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SGDemoLayer.h; path = Layers/SGDemoLayer.h; sourceTree = "<group>"; };
 		4A8071C9124A551900D2F3DE /* SGDemoLayer.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = SGDemoLayer.m; path = Layers/SGDemoLayer.m; sourceTree = "<group>"; };
@@ -207,6 +207,7 @@
 		4AFD5C1D125A73E900C66A87 /* SGWebViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SGWebViewController.m; sourceTree = "<group>"; };
 		4AFD5C96125A7CDD00C66A87 /* SGDemoRecord.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SGDemoRecord.h; sourceTree = "<group>"; };
 		4AFD5C97125A7CDD00C66A87 /* SGDemoRecord.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SGDemoRecord.m; sourceTree = "<group>"; };
+		5DF4385E132AC12900CA84E0 /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = README.md; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -247,7 +248,7 @@
 			children = (
 				4A75535411DBD47A003E8D8A /* update_sg_sdk */,
 				29B97316FDCFA39411CA2CEA /* main.m */,
-				4A24270310DB156D005D1CB1 /* README */,
+				5DF4385E132AC12900CA84E0 /* README.md */,
 				4A24236A10DB0EDD005D1CB1 /* SGiPhoneSDK */,
 				4A24234A10DB0E6D005D1CB1 /* Resources */,
 				4A24230E10DB0E12005D1CB1 /* Classes */,
@@ -652,6 +653,7 @@
 				4AC1F0ED124275CF0053A8AC /* SGRedPin.png in Resources */,
 				4AC1F0EE124275CF0053A8AC /* SGTopInspectorBackground.png in Resources */,
 				4A02E4BF124B164E00D9DB61 /* SGDemoApp-Info.plist in Resources */,
+				5DF4385F132AC12900CA84E0 /* README.md in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
